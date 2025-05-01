@@ -71,7 +71,7 @@ class PandagoClient implements ClientInterface
      */
     public function orders(): OrderResource
     {
-        if (! $this->orderResource) {
+        if (null === $this->orderResource) {
             $this->orderResource = new OrderResource($this);
         }
 
@@ -85,7 +85,7 @@ class PandagoClient implements ClientInterface
      */
     public function outlets(): OutletResource
     {
-        if (! $this->outletResource) {
+        if (null === $this->outletResource) {
             $this->outletResource = new OutletResource($this);
         }
 

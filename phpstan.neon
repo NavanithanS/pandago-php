@@ -3,5 +3,7 @@ parameters:
     paths:
         - src
     reportUnmatchedIgnoredErrors: false
+    treatPhpDocTypesAsCertain: false
     ignoreErrors:
         - '#Unsafe usage of new static\(\)#'
+        - '#Call to function is_string\(\) with float\|int will always evaluate to false#'

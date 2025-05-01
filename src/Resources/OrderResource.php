@@ -120,7 +120,20 @@ class OrderResource
      */
     public function getProofOfDelivery(string $orderId): string
     {
-        return $this->client->request('GET', "/orders/proof_of_delivery/{$orderId}");
+        $response = $this->client->request('GET', "/orders/proof_of_delivery/{$orderId}");
+
+        // Handle different response formats
+        if (is_array($response)) {
+            if (isset($response['data'])) {
+                return $response['data'];
+            }
+
+            // If it's an array without a 'data' key, it's not the expected format
+            throw new PandagoException('Unexpected response format for proof of delivery');
+        }
+
+        // If it's already a string, return it directly
+        return $response;
     }
 
     /**
@@ -133,7 +146,20 @@ class OrderResource
      */
     public function getProofOfPickup(string $orderId): string
     {
-        return $this->client->request('GET', "/orders/proof_of_pickup/{$orderId}");
+        $response = $this->client->request('GET', "/orders/proof_of_pickup/{$orderId}");
+
+        // Handle different response formats
+        if (is_array($response)) {
+            if (isset($response['data'])) {
+                return $response['data'];
+            }
+
+            // If it's an array without a 'data' key, it's not the expected format
+            throw new PandagoException('Unexpected response format for proof of pickup');
+        }
+
+        // If it's already a string, return it directly
+        return $response;
     }
 
     /**
@@ -146,7 +172,20 @@ class OrderResource
      */
     public function getProofOfReturn(string $orderId): string
     {
-        return $this->client->request('GET', "/orders/proof_of_return/{$orderId}");
+        $response = $this->client->request('GET', "/orders/proof_of_return/{$orderId}");
+
+        // Handle different response formats
+        if (is_array($response)) {
+            if (isset($response['data'])) {
+                return $response['data'];
+            }
+
+            // If it's an array without a 'data' key, it's not the expected format
+            throw new PandagoException('Unexpected response format for proof of return');
+        }
+
+        // If it's already a string, return it directly
+        return $response;
     }
 
     /**

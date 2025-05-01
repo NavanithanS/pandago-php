@@ -77,7 +77,7 @@ trait ValidatesParameters
                             if (mb_strlen($value) > (int) $ruleValues[0]) {
                                 return "The {$field} must not be greater than {$ruleValues[0]} characters.";
                             }
-                        } elseif (is_numeric($value) && ! is_string($value)) {
+                        } elseif (is_numeric($value)) {
                             if ($value > (float) $ruleValues[0]) {
                                 return "The {$field} must not be greater than {$ruleValues[0]}.";
                             }
@@ -89,7 +89,7 @@ trait ValidatesParameters
                             if (mb_strlen($value) < (int) $ruleValues[0]) {
                                 return "The {$field} must be at least {$ruleValues[0]} characters.";
                             }
-                        } elseif (is_numeric($value) && ! is_string($value)) {
+                        } elseif (is_numeric($value)) {
                             if ($value < (float) $ruleValues[0]) {
                                 return "The {$field} must be at least {$ruleValues[0]}.";
                             }
