@@ -1,0 +1,2164 @@
+swagger: "2.0"
+info:
+    version: "1.1.0"
+    title: "pandago API"
+    description: |
+        # About
+        The pandago API provides system-to-system integration to facilitate on-demand courier delivery service requests.
+        Each integration is scoped as a specific Brand using a ClientID.
+        Each delivery request will be called an Order.
+
+        ## Client
+        Client represents a single integration for a specific Brand. Client information will include the following:
+        * Customer known name of the Brand/Branch
+        * Address of the Brand/Branch that includes Latitude and Longitude.
+
+        A Client would typically represent a logistical system that manages a Brand with a few branch locations.
+        This system will usually manage or will need an order allocation to distribute order to its branches.
+        The pandago API supports dynamic pick-up location that allows orders to be picked up from any branch location.
+
+        ### Integration Step(s)
+        1. Register a Client as a Brand with pandago.
+        2. Register all Branches/Outlets which relates to the Brand.
+
+           *Note: Accuracy of branch’s latitude and longitude is important for the branch matching process*
+        3. Use the same ClientID when submitting orders from any branch within the registered Brand.
+        ### Ordering Step(s)
+        1. The Sender address must be specified when submitting an Order.
+
+           The Sender latitude and longitude will be used to find the matching Branch/Outlet with a tight tolerance.
+
+           *Note: system will reject the order when it fails to find the matching Branch/Outlet latitude and longitude.*
+
+        ## Order
+        Order is the principal object that encompasses the package delivery process from the start to the end.
+        Once a new order is submitted, pandago will respond with the order details and will start looking for an available courier.
+        OrderID should be used to get updates on the order status.
+
+        ### Status Updates
+        Order status updates can be obtained from the following method:
+        1. Push method
+
+           A Callback URL can be provided as part of the Client information. This will allow the pandago API to push status updates to the Callback URL.
+        2. Pull method
+
+           A Get Order endpoint can be pulled periodically to get the latest status.
+
+        ### Available Statuses
+        | Status | Description |
+        | - | - |
+        | NEW | Order has been created |
+        | RECEIVED | We've accepted the order and will be assigning it to a courier |
+        | WAITING_FOR_TRANSPORT | Looking for a courier to pick up and deliver the order |
+        | ASSIGNED_TO_TRANSPORT | Assigning order to a courier |
+        | COURIER_ACCEPTED_DELIVERY | Courier accepted to pick up and deliver the order |
+        | NEAR_VENDOR | Courier is near the pick-up point |
+        | PICKED_UP | Courier has picked up the order |
+        | COURIER_LEFT_VENDOR | Courier has left from pick-up point |
+        | NEAR_CUSTOMER | Courier is near the drop-off point |
+        | DELIVERED | Courier has delivered the order |
+        | DELAYED | Order delivery has been delayed and estimated delivery time has been updated |
+        | CANCELLED | Order has been cancelled |
+        | RETURNED_TO_VENDOR | Courier has returned the order to the vendor |
+        *Note: Please accept other statuses that are not currently listed above, a new status might be introduce in the future*
+
+        ### Supported Payment Methods
+        | Payment Method | Description |
+        | - | - |
+        | PAID | Order has been fully paid already and courier will not collect any amount from the end customer |
+        | CASH_ON_DELIVERY | Courier will collect payment (order amount) from the end customer upon delivery |
+        *Note: For the billing of the pandago delivery fee, this will be settled separately according to the agreed billing schedule and process*
+
+        # Getting Started
+        These are the steps to start using the pandago API:
+        1. Generate Key Pair (Private Key and Public Key) to support secure communication with the pandago API.
+
+           Follow these commands on a terminal:
+           ```
+           # Generate private key
+           # output: client.pem file
+           openssl genrsa -out client.pem 2048
+
+           # Generate public key from the generated private one
+           # input: client.pem file
+           # output: client.pub file
+           openssl rsa -in client.pem -pubout > client.pub
+           ```
+           Or, follow these steps:
+           1. Open a browser and access this Online RSA Generator (https://cryptotools.net/rsagen)
+           2. Select key length to 2048 bit, and click the Generate Key Pair button.
+           3. Copy and save the Private Key to a file with .pem extension (e.g. client.pem).
+           4. Copy and save the Public Key to a file with .pub extension (e.g. client.pub).
+        2. Contact a pandago representative stating your interest in using the pandago API and provide the following information:
+           1. Public Key (file: client.pub)
+           2. Brand or Branch details:
+              | Attribute | Description | Example |
+              | - | - | - |
+              | Name | Customer known name for your Brand or Branch | Store ABC |
+              | Address | Address of your Brand or Branch. This address will be used as default sender. | 12 Street 3 unit #4-56 |
+              | Latitude | Latitude of the Address | 1.2867416 |
+              | Longitude | Longitude of the Address | 103.8523024 |
+              | Callback URL | [OPTIONAL] The Callback URL for pushing Order statuses must be an HTTPS with valid SSL certificate. See: Order Status Callback | https://example.io/update |
+
+        3. The pandago representative will provide you with ClientID, KeyID and Scope that your service will need to generate an Access Token for thepandago API.
+           | Attribute | Description | Example |
+           | - | - | - |
+           | ClientID | Your service identifier| pandago:sg:00000000-0000-0000-0000-000000000000 |
+           | KeyID | Your public key identifier| 00000000-0000-0000-0000-000000000001 |
+           | Scope | Access scope of your service| pandago.api.sg.* |
+
+host: pandago-api-sandbox.deliveryhero.io
+basePath: /sg/api/v1
+schemes:
+    - https
+consumes:
+    - application/json
+produces:
+    - application/json
+tags:
+    - name: Orders
+securityDefinitions:
+    "Bearer Token":
+        type: apiKey
+        name: Authorization
+        in: header
+        description: |
+            All pandago API endpoints support OAuth 2.0 authentication protocol.
+            Your service will need to generate an Access Token using your service Private Key, ClientID, KeyID and Scope from the pandago Authenticator.
+
+            ## Host
+            ### Sandbox environment
+            https://sts-st.deliveryhero.io
+
+            ### Live Production environment
+            https://sts.deliveryhero.io
+
+            ## Method and Path
+            POST oauth2/token
+
+            ## Request
+            ### Header
+            Content-Type: application/x-www-form-urlencoded
+
+            ### Body
+            There are 2 steps to generate the body.
+            1. Generate assertion as a signed token in Javascript Web Token (JWT) format.
+
+               This is the payload structure of the token:
+               ```
+               {
+                 "alg":"RS256",
+                 "typ":"JWT",
+                 "kid": "{{KeyID}}"
+                }
+                .
+                {
+                 "iss":"{{ClientID}}",
+                 "sub":"{{ClientID}}",
+                 "jti":"{{random uuid (e.g. caa56777-4e88-4c59-be70-3ae513fd2e00)}}",
+                 "exp":{{unix timestamp in the future (e.g. 1625646939)}},
+                 "aud":"https://sts.deliveryhero.io"
+               }
+               ```
+
+               And use the Private Key to sign the token.
+            2. Construct the following body
+               ```
+               grant_type=client_credentials;
+               client_id={{ClientID}};
+               client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer;
+               client_assertion={{SignedJWT}};
+               scope={{Scope}};
+               ```
+               Example
+               ```
+               curl --location --request POST 'https://sts-st.deliveryhero.io/oauth2/token' \
+               --header 'Content-Type: application/x-www-form-urlencoded' \
+               --data-urlencode 'grant_type=client_credentials' \
+               --data-urlencode 'client_id={{ClientID}}' \
+               --data-urlencode 'client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer' \
+               --data-urlencode 'client_assertion={{SignedJWT}}' \
+               --data-urlencode 'scope={{Scope}}'
+               ```
+            ## Response
+            ### Header
+            Content-Type: application/json
+
+            ## Body
+            | Attribute | Type | Required | Description |
+            | - | - | - | - |
+            | access_token | string | yes | access token to be used as authorizer header |
+            | expires_in | string | yes | length of token validity in seconds |
+            Example:
+            ```
+            {
+              “access_token”:”{{AccessToken}}”,
+              “expires_in”:”{{expiry in seconds}}”
+            }
+            ```
+security:
+    - "Bearer Token": []
+paths:
+    /orders:
+        x-summary: "Submission"
+        post:
+            summary: Submit a New Order
+            description: >-
+                Use this endpoint to submit a new order. It takes a JSON
+                object containing an order.
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                      $ref: "#/definitions/CreateOrderRequest"
+            responses:
+                201:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/CreateOrderResponse"
+                    examples:
+                        application/json:
+                            order_id: "y0ud-000001"
+                            client_order_id: "client-ref-000001"
+                            sender:
+                                name: "Pandago"
+                                phone_number: "+6500000000"
+                                location:
+                                    address: "1 2nd Street #08-01"
+                                    latitude: 1.2923742
+                                    longitude: 103.8486029
+                                notes: "use the left side door"
+                            recipient:
+                                name: "Merlion"
+                                phone_number: "+6500000000"
+                                location:
+                                    address: "20 Esplanade Drive"
+                                    latitude: 1.2857488
+                                    longitude: 103.8548608
+                                notes: "use lift A and leave at the front door"
+                            distance: 906.13
+                            payment_method: "PAID"
+                            coldbag_needed: false
+                            amount: 23.50
+                            status: "NEW"
+                            delivery_fee: 8.17
+                            timeline:
+                                estimated_pickup_time: ""
+                                estimated_delivery_time: ""
+                            driver:
+                                id: ""
+                                name: ""
+                                phone_number: ""
+                            created_at: 1536802000
+                            updated_at: 1536802000
+                            delivery_tasks:
+                                age_validation_required: false
+                400:
+                    description: "Invalid request body"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: 'Invalid request payload\n - recipient.phone_number is required'
+                401:
+                    description: "Unauthorized"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "The authorizer should provide its name in the context"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Outlet not found"
+                422:
+                    description: "Unable to process request - All different errors in an array"
+                    schema:
+                        $ref: "#/definitions/Error422ResponseArray"
+                500:
+                    description: "Server error - All different errors in an array"
+                    schema:
+                        $ref: "#/definitions/Error500ResponseArray"
+    /orders/{order_id}:
+        x-summary: "Operation"
+        get:
+            summary: Get Specific Order
+            description: >-
+                Use this endpoint to get an existing order.
+                It takes a JSON object containing an order.
+
+                __NOTE: Cancellation object__ (seen at the end of the payload below) will be provided __only__ when the order is cancelled. It will not be available if the order is not cancelled.
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to get
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/GetOrderResponse"
+                    examples:
+                        application/json:
+                            order_id: "y0ud-000001"
+                            client_order_id: "client-ref-000001"
+                            sender:
+                                name: "Pandago"
+                                phone_number: "+6500000000"
+                                location:
+                                    address: "1 2nd Street #08-01"
+                                    latitude: 1.2923742
+                                    longitude: 103.8486029
+                                notes: "use the left side door"
+                            recipient:
+                                name: "Merlion"
+                                phone_number: "+6500000000"
+                                location:
+                                    address: "20 Esplanade Drive"
+                                    latitude: 1.2857488
+                                    longitude: 103.8548608
+                                notes: "use lift A and leave at the front door"
+                            distance: 906.13
+                            payment_method: "PAID"
+                            coldbag_needed: false
+                            description: "Refreshing drink"
+                            amount: 23.50
+                            status: "NEW"
+                            delivery_fee: 8.17
+                            timeline:
+                                estimated_pickup_time: ""
+                                estimated_delivery_time: ""
+                            driver:
+                                id: ""
+                                name: ""
+                                phone_number: ""
+                            created_at: 1536802000
+                            updated_at: 1536802000
+                            tracking_link: "https://example.com/test_tracking_path"
+                            proof_of_delivery_url: "https://pandago-api-sandbox.deliveryhero.io/api/v1/orders/proof_of_delivery/x-1234"
+                            proof_of_pickup_url: "https://pandago-api-sandbox.deliveryhero.io/api/v1/orders/proof_of_pickup/x-1234"
+                            proof_of_return_url: "https://pandago-api-sandbox.deliveryhero.io/api/v1/orders/proof_of_return/x-1234"
+                            cancellation:
+                                reason: "MISTAKE_ERROR"
+                                source: "CLIENT"
+                            delivery_tasks:
+                                age_validation_required: false
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Order not found"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+        delete:
+            summary: Cancel Specific Order
+            description: |
+                Use this endpoint to cancel an existing order.
+                It takes a JSON object containing an order.
+
+                *NOTE:*
+
+                *An order is only cancellable when it has not been accepted by a courier*
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to get
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                      $ref: "#/definitions/CancelOrderRequest"
+            responses:
+                204:
+                    description: "Success"
+                203:
+                    description: "Deprecated Success"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "reason has been modified to REASON_UNKNOWN"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Order not found"
+                409:
+                    description: "Uncancellable"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Order is not cancellable"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+        put:
+            summary: Update Specific Order
+            description: |
+                Use this endpoint to update an existing order.
+                It takes a JSON object containing an order.
+
+                1. An order can only be modified when it has not been picked up by a courier.
+                2. Changing payment type:
+                   1. CASH_ON_DELIVERY to PAID: Set amount to "0" if the payment type is changed to "PAID".
+                   2. PAID to CASH_ON_DELIVERY: Changing the payment type from PAID to CASH_ON_DELIVERY is not supported.
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to update
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                      $ref: "#/definitions/UpdateOrderRequest"
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/UpdateOrderResponse"
+                400:
+                    description: "Bad Request"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "invalid update request payload"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Order not found"
+                405:
+                    description: "Method not allowed"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "order update is not allowed for this country"
+                422:
+                    description: "Unprocessable Entity"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "order can not be updated"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /orders/proof_of_pickup/{order_id}:
+        x-summary: "Proof of Pickup"
+        get:
+            summary: Get Proof of Pickup for Order
+            description: |
+                Use this endpoint to get proof of pickup for existing and picked up orders.
+
+                __NOTE:__ Proof of pickup will be deleted after 1 week because of security and privacy concerns
+
+                __NOTE:__ API returns encoded base64 file, so if you want to show that response in your html page, you should follow this element using `<img src='data:image/jpeg;base64,<!-- Base64 data -->' />`
+
+                *NOTE: Not yet rolled out.*
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to get its proof of pickup
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/GetProofOfPickupResponse"
+                    examples:
+                        application/json: "base64EncodedFileResponse as file"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponseForProofOfPickup"
+                    examples:
+                        application/json:
+                            message: "Proof of pickup for this order was not found"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /orders/proof_of_delivery/{order_id}:
+        x-summary: "Proof of Delivery"
+        get:
+            summary: Get Proof of Delivery for Order
+            description: |
+                Use this endpoint to get proof of delivery for existing and delivered orders.
+
+                __NOTE:__ Proof of delivery will be deleted after 1 week because of security and privacy concerns
+
+                __NOTE:__ API returns encoded base64 file, so if you want to show that response in your html page, you should follow this element using `<img src='data:image/jpeg;base64,<!-- Base64 data -->' />`
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to get its proof of delivery
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/GetProofOfDeliveryResponse"
+                    examples:
+                        application/json: "base64EncodedFileResponse as file"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponseForProofOfDelivery"
+                    examples:
+                        application/json:
+                            message: "Proof of delivery for this order was not found"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /orders/proof_of_return/{order_id}:
+        x-summary: "Proof of Return"
+        get:
+            summary: Get Proof of Return for Order
+            description: |
+                Use this endpoint to get proof of return for existing and returned orders.
+
+                __NOTE:__ Proof of return will be deleted after 1 week because of security and privacy concerns
+
+                __NOTE:__ API returns encoded base64 file, so if you want to show that response in your html page, you should follow this element using `<img src='data:image/jpeg;base64,<!-- Base64 data -->' />`
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to get its proof of return
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/GetProofOfReturnResponse"
+                    examples:
+                        application/json: "base64EncodedFileResponse as file"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponseForProofOfReturn"
+                    examples:
+                        application/json:
+                            message: "Proof of return for this order was not found"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /orders/{order_id}/coordinates:
+        x-summary: "Coordinates"
+        get:
+            summary: Get Specific Order Current Courier Location
+            description: >-
+                Use this endpoint to get current courier location.
+                It takes a JSON object containing an order.
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: order_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the order to get
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/GetOrderCoordinateResponse"
+                    examples:
+                        application/json:
+                            client_order_id: "client-ref-000001"
+                            latitude: 1.2857488
+                            longitude: 103.8548608
+                            updated_at: 1536802252
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Order not found"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /orders/fee:
+        x-summary: Fee Estimation
+        post:
+            summary: Estimate Fee for an Order
+            description: |
+                Use this endpoint to estimate time of an order.
+                It takes a JSON object containing an order.
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                      $ref: "#/definitions/EstimateOrderRequest"
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/EstimateOrderFeeResponse"
+                    examples:
+                        application/json:
+                            client_order_id: "client-ref-000001"
+                            estimated_delivery_fee: 8.17
+                400:
+                    description: "Invalid request body"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: 'Invalid request payload\n - recipient.phone_number is required'
+                422:
+                    description: "Unable to process request"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "No Branch found that is close enough to the given sender coordinates"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /orders/time:
+        x-summary: Time Estimation
+        post:
+            summary: Estimate Time for an Order
+            description: |
+                Use this endpoint to estimate time of an order.
+                It takes a JSON object containing an order.
+
+                *NOTE:*
+
+                *Time is estimated based on historical data and it does not consider live condition (e.g. traffic, weather, etc.)*
+            tags:
+                - Orders
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                      $ref: "#/definitions/EstimateOrderRequest"
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/EstimateOrderTimeResponse"
+                    examples:
+                        application/json:
+                            client_order_id: "client-ref-000001"
+                            estimated_pickup_time: "2018-09-13T01:30:52.123Z"
+                            estimated_delivery_time: "2018-09-13T01:45:52.123Z"
+                400:
+                    description: "Invalid request body"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: 'Invalid request payload\n - recipient.phone_number is required'
+                422:
+                    description: "Unable to process request"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "No Branch found that is close enough to the given sender coordinates"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /callback:
+        x-summary: Callback to your service endpoint
+        post:
+            summary: Calling your callback URL
+            description: |
+                **READ THIS FIRST!**
+                * This is NOT an actual endpoint. This is a callback from pandago to your endpoint
+                * This is used to represent the payload pandago will sent
+                * This is an optional feature and it requires your callback URL to be registered with your ClientID
+
+                **Description**
+                * The Callback URL will need to be HTTPS with a valid SSL certificate.
+                * Body posted by this feature is stripped of any Personally Identifiable Information (PII).
+                * Full Order body can be fetched using the Get Specific Order feature.
+                * If there is an error, we retry sending the request three times. If the response status code is 2xx, it means that there was no error and the callback was successful in sending order status.
+
+                **Order Cancellation Callback**
+                * When you cancel an order, if you provided a callback url, pandago will send request to that url.
+                * In the payload, there will be Cancellation object which contains reason and source of cancellation
+                * List of cancellation reasons are provided below.
+
+                * __NOTE: Cancellation object__ (seen at the end of the payload below) will be provided __only__ when the order is cancelled. It will not be available if the order is not cancelled.
+
+                | Cancellation Reason | Description |
+                | - | - |
+                | MISTAKE_ERROR | Incorrect order details  |
+                | REASON_UNKNOWN | Customer cancelled order |
+                | DELIVERY_ETA_TOO_LONG | Other delivery method became available |
+                | UNABLE_TO_FIND | Rider was unable to find the customer  |
+                | TECHNICAL_PROBLEM | System error / technical issue |
+                | NO_COURIER | No riders were available  |
+                | OUTSIDE_SERVICE_HOURS | Order was placed outside of service hours |
+                | COURIER_ACCIDENT | Rider had an accident  |
+                | BAD_WEATHER | Bad weather issue |
+                | OUTSIDE_DELIVERY_AREA | Rider cannot deliver to the area  |
+                | CLOSED | Restaurant was closed |
+                | ADDRESS_INCOMPLETE_MISSTATED | Customer address was incorrect  |
+                | ADDRESS_INCOMPLETE_MISSTATED | Customer address was incorrect  |
+                | COURIER_UNREACHABLE | Rider was unreachable |
+                | FOOD_QUALITY_SPILLAGE | Customer refused to accept order due to spillage |
+                | LATE_DELIVERY | Customer refused to accept order due to late delivery |
+                | UNABLE_TO_PAY | Customer was unable to pay for the order  |
+                | WRONG_ORDER_ITEMS_DELIVERED | Customer refused to accept because items were incorrect |
+
+                **Verification of Callback**
+                  Signature-based verification can be used to secure callback messages to the API vendors.
+                  To enable signature verification, please contact with regional/local ops team and provide your secret key.
+
+                  * The payload will be signed by the platform, and the `base64`-encoded signature will be added to the header as `X-Signature-SHA256`.
+                  * Verification can be done using the provided secret on the client side.
+
+                  Example verification codes:
+
+                  Golang:
+
+                  ```golang
+                  const (
+                    SignatureHeader string = "X-Signature-SHA256"
+                    Secret string = "supersecret"
+                  )
+
+                  func handler(w http.ResponseWriter, r *http.Request) {
+                    body, err := io.ReadAll(r.Body)
+                    if err != nil {
+                      // can't read body
+                    }
+                    defer r.Body.Close()
+
+                    ok, err := verify(body, r.Header.Get(SignatureHeader))
+                    if err != nil {
+                      // can't verify signature
+                    } else if !ok {
+                      // signature does not match
+                    }
+
+                    // signature is verified
+                  }
+
+                  func verify(body []byte, signature string) (bool, error) {
+                    sig, err := hex.DecodeString(signature)
+                    if err != nil {
+                      return false, err
+                    }
+
+                    mac := hmac.New(sha256.New, []byte(Secret))
+                    mac.Write(body)
+
+                    return hmac.Equal(sig, mac.Sum(nil)), nil
+                  }
+                  ```
+
+            tags:
+                - Callback
+            security: []
+            parameters:
+                - name: body
+                  in: body
+                  description: "__NOTE: Cancellation object__ (seen at the end of the payload below) will be provided __only__ when the order is cancelled. It will not be available if the order is not cancelled."
+                  required: true
+                  schema:
+                      $ref: "#/definitions/CallbackRequest"
+            responses:
+                200:
+                    description: "Success"
+                    examples:
+                        application/json:
+    /outlets/{client_vendor_id}:
+        x-summary: Operations
+        put:
+            summary: Create or Update an Outlet
+            tags:
+                - Outlets
+            description: |
+                *NOTE for vendors in Finland, Norway, and Sweden:*
+
+                Vendors in the the named countries have the option to work with coordinates (by providing **`latitude`** and  **`longitude`**) or with addresses by providing **`address`**. Addresses should be specified in accordance with the format used by the national postal service of the specific country. Do not include additional address elements, like business names, floor numbers, etc. Delimit address elements by spaces. Examples:
+                 * Jakobsbergsgatan 24 111 44 Stockholm
+                 * Pasilankatu 10 00240 Helsinki
+                 * Waldemar Thranes gate 98 0175 Oslo
+
+                *NOTE for vendors in Singapore:*
+
+                Vendors in Singapore have the option to work with location coordinates (by providing **`latitude`** and  **`longitude`**) or with postal codes (by providing **`postal_code`**). If both location coordinates and postal codes are provided, only the coordinates will be used for finding the exact location.
+                Postal code should be specified as a 6 digit number. For example: 752340.
+
+                *NOTE on removing users:*
+
+                * Users can only be removed while updating an outlet.
+                * Adding and removing users in the same request is not allowed.
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: client_vendor_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the outlet to get
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                      $ref: "#/definitions/CreateOrUpdateOutletRequest"
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/Outlet"
+                400:
+                    description: "Invalid request body"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: 'Invalid request payload\n - recipient.phone_number is required'
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+        get:
+            summary: Get an Outlet
+            tags:
+                - Outlets
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+                - name: client_vendor_id
+                  in: path
+                  type: string
+                  required: true
+                  description: ID of the outlet to get
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/VendorResponse"
+                404:
+                    description: "Not found"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Outlet not found"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+    /outletList:
+        x-summary: Bulk Operations
+        get:
+            summary: Get All Outlets
+            description: |
+                Kindly use this endpoint to get all outlets created under a single parent vendor. This end point will work only with Brand Vendors. When any Outlet vendor sends this request, they will see an error message saying "This vendor is not a parent".
+            tags:
+                - Outlets
+            parameters:
+                - name: Authorization
+                  in: header
+                  required: true
+                  type: string
+                  default: "Bearer {access-token}"
+            responses:
+                200:
+                    description: "Success"
+                    schema:
+                        $ref: "#/definitions/OutletListResponse"
+                401:
+                    description: "Unauthorized"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "This vendor is not a parent"
+                500:
+                    description: "Server error"
+                    schema:
+                        $ref: "#/definitions/ErrorResponse"
+                    examples:
+                        application/json:
+                            message: "Unable to proceed, something went wrong"
+definitions:
+    Address:
+        type: string
+        maxLength: 255
+    Boolean:
+        title: Boolean
+        type: boolean
+        default: false
+    Building:
+        type: string
+        maxLength: 120
+    Cancellation:
+        title: Cancellation
+        type: object
+        properties:
+            source:
+                $ref: "#/definitions/Source"
+            reason:
+                $ref: "#/definitions/Reason"
+    DeliveryTasks:
+        title: Delivery Tasks
+        description: >-
+            The tasks that you want to be performed by the rider are located under this heading.
+        type: object
+        properties:
+            age_validation_required:
+                $ref: "#/definitions/AgeValidationRequired"
+    City:
+        title: City
+        type: string
+        maxLength: 300
+        example: Singapore
+    ClientVendorID:
+        title: Client Outlet ID
+        type: string
+        maxLength: 255
+    Contact:
+        title: Contact
+        type: object
+        description: |
+            Please provide **`name`**, **`phone_number`** and **`location`** attributes
+
+            *NOTE for vendors in Finland, Norway, and Sweden:*
+
+            Vendors in the the named countries have the option to work with coordinates (by providing **`location.latitude`** and  **`location.longitude`**) or with addresses by providing **`location.address`**. Addresses should be specified in accordance with the format used by the national postal service of the specific country. Do not include additional address elements, like business names, floor numbers, etc. Delimit address elements by spaces. Examples:
+             * Jakobsbergsgatan 24 111 44 Stockholm
+             * Pasilankatu 10 00240 Helsinki
+             * Waldemar Thranes gate 98 0175 Oslo
+
+
+            &nbsp;
+
+            *NOTE for vendors in Singapore:*
+
+            Vendors in Singapore have the option to work with location coordinates (by providing **`location.latitude`** and  **`location.longitude`**) or with postal codes (by providing **`location.postalcode`**). If both location coordinates and postal codes are provided, only the coordinates will be used for finding the exact location.
+            Postal code should be specified as a 6 digit number. For example: 752340.
+        properties:
+            name:
+                type: string
+                maxLength: 255
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            location:
+                $ref: "#/definitions/Location"
+            notes:
+                type: string
+                maxLength: 2048
+                description: >-
+                    Include instructions for our couriers regarding Pick-Up (in Sender) or Drop-Off (in Recipient).
+
+                    TIP:
+
+                    You can include your OrderID as part of Pick-Up instruction and our couriers will be able to see it in their app.
+        required:
+            - name
+            - phone_number
+            - location
+    ContactWithOptionalFields:
+        title: Contact
+        type: object
+        description: >-
+            Please provide **`location`** attribute
+
+            The **`name`** and **`phone_number`** attributes are optional.
+
+            *NOTE for vendors in Finland, Norway, and Sweden:*
+
+            Vendors in the the named countries have the option to work with coordinates (by providing **`location.latitude`** and  **`location.longitude`**) or with addresses by providing **`location.address`**. Addresses should be specified in accordance with the format used by the national postal service of the specific country. Do not include additional address elements, like business names, floor numbers, etc. Delimit address elements by spaces. Examples:
+             * Jakobsbergsgatan 24 111 44 Stockholm
+             * Pasilankatu 10 00240 Helsinki
+             * Waldemar Thranes gate 98 0175 Oslo
+
+
+            &nbsp;
+
+
+            *NOTE for vendors in Singapore:*
+
+            Vendors in Singapore have the option to work with location coordinates (by providing **`location.latitude`** and  **`location.longitude`**) or with postal codes (by providing **`location.postalcode`**). If both location coordinates and postal codes are provided, only the coordinates will be used for finding the exact location.
+            Postal code should be specified as a 6 digit number. For example: 752340.
+        properties:
+            name:
+                type: string
+                maxLength: 255
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            location:
+                $ref: "#/definitions/Location"
+            notes:
+                type: string
+                maxLength: 2048
+                description: >-
+                    Include instructions for our couriers regarding Pick-Up (in Sender) or Drop-Off (in Recipient).
+
+                    TIP:
+
+                    You can include your OrderID as part of Pick-Up instruction and our couriers will be able to see it in their app.
+        required:
+            - location
+    Currency:
+        title: Currency
+        type: string
+        format: ISO4217
+        example: SGD
+    Description:
+        title: Description
+        type: string
+        maxLength: 200
+    District:
+        type: string
+        maxLength: 300
+    CallbackDriverLocation:
+        title: Location
+        type: object
+        description: >-
+            Location information is added only to the statuses where the order has an active driver.
+        properties:
+            latitude:
+                type: string
+            longitude:
+                type: string
+    CallbackDriver:
+        title: Driver
+        type: object
+        properties:
+            id:
+                type: number
+            name:
+                type: number
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            location:
+                $ref: "#/definitions/CallbackDriverLocation"
+    Driver:
+        title: Driver
+        type: object
+        properties:
+            id:
+                type: string
+            name:
+                type: string
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+    Halal:
+        title: Halal
+        type: boolean
+        description: >-
+            Boolean flag to determine that the Outlet has a valid Halal certification
+    Latitude:
+        title: Latitude
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+    Longitude:
+        title: Longitude
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+    Locale:
+        title: Locale
+        type: string
+        format: ISO639-1
+        example: en-SG
+    Location:
+        title: Location
+        type: object
+        properties:
+            address:
+                $ref: "#/definitions/Address"
+            latitude:
+                $ref: "#/definitions/Latitude"
+            longitude:
+                $ref: "#/definitions/Longitude"
+            postalcode:
+                $ref: "#/definitions/PostalCode"
+        required:
+            - address
+            - latitude
+            - longitude
+    Name:
+        title: Name
+        type: string
+        maxLength: 300
+    CreateOrder:
+        title: Order
+        type: object
+        properties:
+            order_id:
+                type: string
+            client_order_id:
+                type: string
+            sender:
+                $ref: "#/definitions/Sender"
+            recipient:
+                $ref: "#/definitions/Contact"
+            distance:
+                type: number
+                description: Distance of the trip in meters, calculated using the Haversine formula.
+            payment_method:
+                $ref: "#/definitions/PaymentMethod"
+            coldbag_needed:
+                $ref: "#/definitions/Boolean"
+            amount:
+                $ref: "#/definitions/Price"
+            description:
+                $ref: "#/definitions/Description"
+            status:
+                $ref: "#/definitions/Status"
+            delivery_fee:
+                $ref: "#/definitions/Price"
+            timeline:
+                $ref: "#/definitions/Timeline"
+            driver:
+                $ref: "#/definitions/Driver"
+            created_at:
+                $ref: "#/definitions/Timestamp"
+            updated_at:
+                $ref: "#/definitions/Timestamp"
+            delivery_tasks:
+                $ref: "#/definitions/DeliveryTasks"
+    Order:
+        title: Order
+        type: object
+        properties:
+            order_id:
+                type: string
+            client_order_id:
+                type: string
+            sender:
+                $ref: "#/definitions/Sender"
+            is_dynamic_pickup:
+                $ref: "#/definitions/Boolean"
+            recipient:
+                $ref: "#/definitions/Contact"
+            distance:
+                type: number
+                description: Distance of the trip in meters, calculated using the Haversine formula.
+            payment_method:
+                $ref: "#/definitions/PaymentMethod"
+            coldbag_needed:
+                $ref: "#/definitions/Boolean"
+            amount:
+                $ref: "#/definitions/Price"
+            collect_from_customer:
+                $ref: "#/definitions/Price"
+            description:
+                $ref: "#/definitions/Description"
+            status:
+                $ref: "#/definitions/Status"
+            delivery_fee:
+                $ref: "#/definitions/Price"
+            timeline:
+                $ref: "#/definitions/Timeline"
+            driver:
+                $ref: "#/definitions/Driver"
+            created_at:
+                $ref: "#/definitions/Timestamp"
+            updated_at:
+                $ref: "#/definitions/Timestamp"
+            tracking_link:
+                type: string
+            proof_of_delivery_url:
+                type: string
+            proof_of_pickup_url:
+                type: string
+            proof_of_return_url:
+                type: string
+            cancellation:
+                $ref: "#/definitions/Cancellation"
+            delivery_tasks:
+                $ref: "#/definitions/DeliveryTasks"
+        required:
+            - order_id
+            - recipient
+            - payment_method
+            - amount
+            - description
+            - status
+            - delivery_fee
+            - timeline
+            - driver
+            - created_at
+            - updated_at
+    UpdateOrder:
+        title: Order
+        type: object
+        properties:
+            order_id:
+                type: string
+            created_at:
+                type: number
+            status:
+                type: string
+            payment_method:
+                $ref: "#/definitions/PaymentMethod"
+            location:
+                $ref: "#/definitions/Location"
+            description:
+                type: string
+            amount:
+                $ref: "#/definitions/Price"
+            delivery_fee:
+                $ref: "#/definitions/Price"
+    ProofOfDelivery:
+        title: ProofOfDelivery
+        type: string
+        format: binary
+    ProofOfPickup:
+        title: ProofOfPickup
+        type: string
+        format: binary
+    ProofOfReturn:
+        title: ProofOfReturn
+        type: string
+        format: binary
+    Outlet:
+        title: Outlet
+        type: object
+        properties:
+            vendor_id:
+                type: string
+            client_vendor_id:
+                $ref: "#/definitions/ClientVendorID"
+            name:
+                $ref: "#/definitions/Name"
+            address:
+                $ref: "#/definitions/Address"
+            street:
+                $ref: "#/definitions/Street"
+            street_number:
+                $ref: "#/definitions/StreetNumber"
+            building:
+                $ref: "#/definitions/Building"
+            district:
+                $ref: "#/definitions/District"
+            postal_code:
+                $ref: "#/definitions/PostalCode"
+            rider_instructions:
+                $ref: "#/definitions/RiderInstructions"
+            latitude:
+                $ref: "#/definitions/Latitude"
+            longitude:
+                $ref: "#/definitions/Longitude"
+            city:
+                $ref: "#/definitions/City"
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            currency:
+                $ref: "#/definitions/Currency"
+            description:
+                type: string
+            locale:
+                $ref: "#/definitions/Locale"
+            halal:
+                $ref: "#/definitions/Halal"
+            users:
+                type: array
+                items:
+                    type: string
+                    format: email
+        example:
+            client_vendor_id: "outlet-987b61a1-7ccf-4447-82e0-6b9c1ab35a4f"
+            name: "Order Anytime Delivery Anywhere"
+            address: "1 2nd Street #08-01"
+            latitude: 1.2923742
+            longitude: 103.8486029
+            city: "Singapore"
+            phone_number: "+6587654321"
+            currency: "SGD"
+            locale: "en-SG"
+            description: "any items are for sale"
+            vendor_id: "a-bcde"
+            users:
+                - example@email.com
+                - example2@email.com
+        required:
+            - name
+            - address
+            - latitude
+            - city
+            - currency
+            - description
+            - locale
+            - phone_number
+    VendorResponse:
+        title: VendorResponse
+        type: object
+        properties:
+            client_vendor_id:
+                $ref: "#/definitions/ClientVendorID"
+            name:
+                $ref: "#/definitions/Name"
+            address:
+                $ref: "#/definitions/Address"
+            street:
+                $ref: "#/definitions/Street"
+            street_number:
+                $ref: "#/definitions/StreetNumber"
+            building:
+                $ref: "#/definitions/Building"
+            district:
+                $ref: "#/definitions/District"
+            postal_code:
+                $ref: "#/definitions/PostalCode"
+            rider_instructions:
+                $ref: "#/definitions/RiderInstructions"
+            latitude:
+                $ref: "#/definitions/Latitude"
+            longitude:
+                $ref: "#/definitions/Longitude"
+            city:
+                $ref: "#/definitions/City"
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            currency:
+                $ref: "#/definitions/Currency"
+            description:
+                type: string
+            locale:
+                $ref: "#/definitions/Locale"
+            halal:
+                $ref: "#/definitions/Halal"
+            users:
+                type: array
+                items:
+                    type: string
+                    format: email
+        example:
+            client_vendor_id: "outlet-987b61a1-7ccf-4447-82e0-6b9c1ab35a4f"
+            name: "Order Anytime Delivery Anywhere"
+            address: "1 2nd Street #08-01"
+            latitude: 1.2923742
+            longitude: 103.8486029
+            city: "Singapore"
+            phone_number: "+6587654321"
+            currency: "SGD"
+            locale: "en-SG"
+            description: "any items are for sale"
+            users:
+                - example@email.com
+                - example2@email.com
+        required:
+            - name
+            - address
+            - latitude
+            - city
+            - currency
+            - description
+            - locale
+            - phone_number
+    OutletListResponse:
+        title: OutletListResponse
+        type: array
+        items:
+            $ref: "#/definitions/OutletList"
+        example:
+            - client_vendor_id: "outlet-8c3179cc-630b-4aba-83f1-8450f7954ed3"
+              name: "Order Anytime Delivery Anywhere"
+              address: "Central #08-02"
+              latitude: 1.2923742
+              longitude: 103.83231003
+              phone_number: "+6587654321"
+            - client_vendor_id: "outlet-7a6202b5-8dc8-4b93-88ef-a7dd895dbe7f"
+              name: "Order Anytime Delivery Anywhere"
+              address: "2nd Street #08-03"
+              latitude: 1.86631006
+              longitude: 103.5486025
+              phone_number: "+6587654321"
+            - client_vendor_id: "outlet-4b1dd7a8-90e2-4b00-a7ee-6cca61dc70f0"
+              name: "Order Anytime Delivery Anywhere"
+              address: "1st Street #08-04"
+              latitude: 1.3823567
+              longitude: 103.6686023
+              phone_number: "+6587654321"
+    OutletList:
+        title: OutletList
+        type: object
+        properties:
+            client_vendor_id:
+                $ref: "#/definitions/ClientVendorID"
+            name:
+                $ref: "#/definitions/Name"
+            address:
+                $ref: "#/definitions/Address"
+            latitude:
+                $ref: "#/definitions/Latitude"
+            longitude:
+                $ref: "#/definitions/Longitude"
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+        required:
+            - name
+            - address
+            - latitude
+            - longitude
+            - phone_number
+    PaymentMethod:
+        type: string
+        enum:
+            - PAID
+            - CASH_ON_DELIVERY
+        description: >-
+            Supported Payment Methods:
+             * `PAID` - Order has been fully paid already and courier will not collect any amount from the end customer
+             * `CASH_ON_DELIVERY` - Courier will collect payment (order amount) from the end customer upon delivery
+    PhoneNumber:
+        type: string
+        format: e164
+        description: |
+            * Phone number in E.164 standard (https://en.wikipedia.org/wiki/E.164)
+            * libphonenumber is used for phone number validation
+        example: "+6588888888"
+    PostalCode:
+        title: PostalCode **(can be used only for Singapore)**
+        type: string
+        maxLength: 120
+        description: Vendors in Singapore alone should use this attribute. If an accurate postal code is provided for Singapore orders, vendor does not need to provide address or lat/long information.
+        example: 752340, 750313, 757046
+    Price:
+        title: Price
+        type: number
+        default: 0
+        minimum: 0
+        example: 123.45
+    Reason:
+        type: string
+        enum:
+            - ADDRESS_INCOMPLETE_MISSTATED
+            - BAD_WEATHER
+            - CLOSED
+            - COURIER_ACCIDENT
+            - COURIER_UNREACHABLE
+            - DELIVERY_ETA_TOO_LONG
+            - DUPLICATE_ORDER
+            - FOOD_QUALITY_SPILLAGE
+            - LATE_DELIVERY
+            - MISTAKE_ERROR
+            - NO_COURIER
+            - OUTSIDE_DELIVERY_AREA
+            - OUTSIDE_SERVICE_HOURS
+            - REASON_UNKNOWN
+            - TECHNICAL_PROBLEM
+            - UNABLE_TO_FIND
+            - UNABLE_TO_PAY
+            - WRONG_ORDER_ITEMS_DELIVERED
+        description: >-
+            Acceptable Reasons:
+              * `ADDRESS_INCOMPLETE_MISSTATED` - Customer's address is incomplete OR customer enters incorrect address on purpose in order to be able to proceed with the order with the vendor, with the actual customer address outside the vendor's delivery area.
+              * `BAD_WEATHER` - Vendor/Logistics cannot deliver because of weather conditions.
+              * `CLOSED` - Vendor is closed.
+              * `COURIER_ACCIDENT` - Courier has been involved in an accident and cannot fulfill the order.
+              * `COURIER_UNREACHABLE` - Courier is unreachable/unresponsive and/or uncontactable.
+              * `DELIVERY_ETA_TOO_LONG` - Before promised delivery time, customer believes that the ETA is too long.
+              * `DUPLICATE_ORDER` - Duplicate order.
+              * `FOOD_QUALITY_SPILLAGE` - Customer has an issue with the food quality (cold, inedible, etc.) OR order spillage occurred during transport (VD/OD).
+              * `LATE_DELIVERY` - Customer has received delivery but (excessively) passed promised delivery time.
+              * `MISTAKE_ERROR` - Customer placed order in error/accidentally or with incorrect specifications (i.e. preorder, incorrect payment type).
+              * `NO_COURIER` - Vendor: Vendor has no courier (drivers/riders/walkers/etc.) available to fulfill the order. Logistics: Order is pending in Logistics/Hurrier without assigned courier and customer no longer wishes to wait.
+              * `OUTSIDE_DELIVERY_AREA` - Vendor: Vendor does not deliver to the customer's address/area. Logistics: Logistics does not deliver to the customer's address/area.
+              * `OUTSIDE_SERVICE_HOURS` - Order has been placed outside of our Logistic service hours.
+              * `REASON_UNKNOWN` - Reason for failure is not available. VENDOR: Vendor initiated, CUSTOMER: Customer initiated, PLATFORM: Unknown who initiated.
+              * `TECHNICAL_PROBLEM` - Vendor: Vendor cannot fulfill an order due to technical issues, e.g. order can not be printed, etc. Where a vendor cannot be contacted and order could not be delivered to their transmission/reception device or order was delivered to the device and it timed-out/expired, reasons UNREACHABLE and NO_RESPONSE should be used respectively rather than TECHNICAL_PROBLEM. Logistics: Logistics is having general technical issues (i.e. Hurrier is down, etc.). Platform: Platform is experiencing some technical issue whereby orders cannot be placed with the Logistics/Vendor and/or have been pending too long. As a result, orders have been failed by the platform.
+              * `UNABLE_TO_FIND` - Customer cannot be located to complete pick-up/delivery or order items.
+              * `UNABLE_TO_PAY` - Customer cannot pay for the order, e.g. insufficient cash (COD) or card doesn't work for card on delivery, etc.
+              * `WRONG_ORDER_ITEMS_DELIVERED` - Customer has received wrong order items or is missing significant item(s).
+    RiderInstructions:
+        type: string
+        maxLength: 500
+    Sender:
+        title: Sender
+        type: object
+        description: |
+            There are two type of payloads accepted:
+              * Sender details
+
+                Please provide **`name`**, **`phone_number`** and **`location`** attributes
+
+              * Outlet reference
+
+                Please provide **`client_vendor_id`** attribute
+
+              *In the case where all attributes are provided, Outlet reference will be used and Sender details will be ignored.*
+
+            &nbsp;
+
+            *NOTE for vendors in Finland, Norway, Sweden, Tawian and Kuwait:*
+
+            Vendors in the the named countries have the option to work with coordinates (by providing **`location.latitude`** and  **`location.longitude`**) or with addresses by providing **`location.address`**. Addresses should be specified in accordance with the format used by the national postal service of the specific country. Do not include additional address elements, like business names, floor numbers, etc. Delimit address elements by spaces. Examples:
+             * Jakobsbergsgatan 24 111 44 Stockholm
+             * Pasilankatu 10 00240 Helsinki
+             * Waldemar Thranes gate 98 0175 Oslo
+             * 5 Lane 80 Taiyuen Road, Datong District, Taipei City 10349
+             * Al-Sabbahiya, B.P. 48001, 54551 KUWAIT
+
+            &nbsp;
+
+
+            *NOTE for vendors in Singapore:*
+
+            Vendors in Singapore have the option to work with location coordinates (by providing **`location.latitude`** and  **`location.longitude`**) or with postal codes (by providing **`location.postalcode`**). If both location coordinates and postal codes are provided, only the coordinates will be used for finding the exact location.
+            Postal code should be specified as a 6 digit number. For example: 752340.
+
+        properties:
+            name:
+                type: string
+                maxLength: 255
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            location:
+                $ref: "#/definitions/Location"
+            notes:
+                type: string
+                maxLength: 2048
+                description: >-
+                    Include instructions for our couriers regarding Pick-Up (in Sender) or Drop-Off (in Recipient).
+
+
+                    TIP:
+
+
+                    You can include your OrderID as part of Pick-Up instruction and our couriers will be able to see it in their app.
+            client_vendor_id:
+                $ref: "#/definitions/ClientVendorID"
+    Source:
+        type: string
+        enum:
+            - CLIENT
+            - LOGISTICS
+        description: >-
+            Acceptable Sources:
+             * `CLIENT` - Cancellation was requested by Client
+             * `LOGISTICS` - Cancellation was requested by Logistics
+    AgeValidationRequired:
+        type: boolean
+        default: false
+        description: >-
+            In supported countries, setting this attribute to true will allow you to request age verification of the customer by the rider. This is available in Sweden only at present
+    Status:
+        type: string
+        enum:
+            - NEW
+            - RECEIVED
+            - WAITING_FOR_TRANSPORT
+            - ASSIGNED_TO_TRANSPORT
+            - COURIER_ACCEPTED_DELIVERY
+            - NEAR_VENDOR
+            - PICKED_UP
+            - COURIER_LEFT_VENDOR
+            - NEAR_CUSTOMER
+            - DELIVERED
+            - DELAYED
+            - CANCELLED
+            - RETURNED_TO_VENDOR
+        description: >-
+            Available Statuses:
+             * `NEW` - Order has been created
+             * `RECEIVED` - We've accepted the order and will be assigning it to a courier
+             * `WAITING_FOR_TRANSPORT` - Assigning order to a courier
+             * `ASSIGNED_TO_TRANSPORT` - Courier has been dispatched to pick up and deliver the order
+             * `COURIER_ACCEPTED_DELIVERY` - Courier accepted to pick up and deliver the order
+             * `NEAR_VENDOR` - Courier is near the pick-up point
+             * `PICKED_UP` - Courier has picked up the order
+             * `COURIER_LEFT_VENDOR` - Courier has left from pick-up point
+             * `NEAR_CUSTOMER` - Courier is near the drop-off point
+             * `DELIVERED` - Courier has delivered the order
+             * `DELAYED` - Order delivery has been delayed and estimated delivery time has been updated
+             * `CANCELLED` - Order has been cancelled
+             * `RETURNED_TO_VENDOR` - Courier has returned the order to the vendor
+    Street:
+        type: string
+        maxLength: 300
+    StreetNumber:
+        type: string
+        maxLength: 120
+    Timeline:
+        title: Timeline
+        type: object
+        properties:
+            estimated_pickup_time:
+                type: string
+            estimated_delivery_time:
+                type: string
+    Timestamp:
+        title: Timestamp
+        type: integer
+    CallbackRequest:
+        title: Callback Request
+        type: object
+        properties:
+            order_id:
+                type: string
+            client_order_id:
+                type: string
+            status:
+                $ref: "#/definitions/Status"
+            timeline:
+                $ref: "#/definitions/Timeline"
+            driver:
+                $ref: "#/definitions/CallbackDriver"
+            created_at:
+                $ref: "#/definitions/Timestamp"
+            updated_at:
+                $ref: "#/definitions/Timestamp"
+            tracking_link:
+                type: string
+            proof_of_delivery_url:
+                type: string
+            proof_of_pickup_url:
+                type: string
+            proof_of_return_url:
+                type: string
+            distance:
+                type: number
+                description: Distance of the trip in meters, calculated using the Haversine formula.
+            cancellation:
+                $ref: "#/definitions/Cancellation"
+            delivery_tasks:
+                title: Delivery Tasks
+                type: object
+                properties:
+                    age_validation_required:
+                        $ref: "#/definitions/AgeValidationRequired"
+        required:
+            - order_id
+            - status
+            - timeline
+            - driver
+            - created_at
+            - updated_at
+        example:
+            order_id: "y0ud-000001"
+            client_order_id: "client-ref-0000001"
+            status: "PICKED_UP"
+            timeline:
+                extimated_pickup_time: "2018-09-13T01:30:52.123Z"
+                estimated_delivery_time: "2018-09-13T01:45:52.123Z"
+            driver:
+                id: "12324"
+                name: "Panda Go"
+                phone_number: "+6500000000"
+                location:
+                    latitude: 1.2923742
+                    longitude: 103.8486029
+            created_at: 1536802000
+            updated_at: 1536802252
+            tracking_link: "https://example.com/test_tracking_path"
+            proof_of_delivery_url: "https://pandago-api-sandbox.deliveryhero.io/api/v1/orders/proof_of_delivery/x-1234"
+            proof_of_pickup_url: "https://pandago-api-sandbox.deliveryhero.io/api/v1/orders/proof_of_pickup/x-1234"
+            proof_of_return_url: "https://pandago-api-sandbox.deliveryhero.io/api/v1/orders/proof_of_return/x-1234"
+            cancellation:
+                reason: "MISTAKE_ERROR"
+                source: "CLIENT"
+            delivery_tasks:
+                age_validation_required: false
+    CreateOrderRequest:
+        title: Create Order Request
+        type: object
+        properties:
+            client_order_id:
+                type: string
+            sender:
+                $ref: "#/definitions/Sender"
+            recipient:
+                $ref: "#/definitions/Contact"
+            payment_method:
+                $ref: "#/definitions/PaymentMethod"
+            coldbag_needed:
+                $ref: "#/definitions/Boolean"
+            amount:
+                $ref: "#/definitions/Price"
+            collect_from_customer:
+                title: Collect from customer
+                type: number
+                default: 0
+                minimum: 0
+                example: 123.45
+                description: >-
+                    This feature provides the ability to vendors collect amounts that is different than the amount paid to the vendors.
+                    The feature can be activated if Pay at Pickup is enabled in the respective country and for a particular vendor and if the payment type is selected as CASH_ON_DELIVERY.
+
+
+                    &nbsp;
+
+
+                    Validation rules:
+
+                    - `collect_from_customer` can't exceed the order's `amount` value (e.g. if the amount is 10, collect_from_customer can be set to max 20)
+                    - `collect_from_customer` can't be lower than the `amount`.
+
+
+                    &nbsp;
+
+
+                    NOTE:
+
+                    - _Rolled out in Jordan. Rollout will be planned for the other countries after the pilot phase._
+            description:
+                $ref: "#/definitions/Description"
+            preordered_for:
+                type: number
+                description: >-
+                    Using this attribute allows you to schedule orders for a later point in time.
+                    Leave this empty (do not use 0, use null) if you want to dispatch an order instantly.
+                    You can schedule deliveries from 55 minutes to 2 days in the future while considering our operating hours.
+                    Use unix timestamps to represent the scheduled delivery time.
+
+
+                    &nbsp;
+
+
+                    Please note that, the preordered_for parameter represents the scheduled delivery time and not the pick-up time. This means that the timestamp indicates the expected time at which the ordered items will be delivered to the specified destination, rather than the time at which the items should be picked up.
+
+
+                    &nbsp;
+
+
+                    Example:
+                    _January 25, 2022 03:01:25 UTC is represented as 1643079685 in unix timestamp_
+            delivery_tasks:
+                $ref: "#/definitions/DeliveryTasks"
+        required:
+            - recipient
+            - amount
+            - description
+        example:
+            sender:
+                name: "Pandago"
+                phone_number: "+6500000000"
+                location:
+                    address: "1 2nd Street #08-01"
+                    latitude: 1.2923742
+                    longitude: 103.8486029
+                notes: "use the left side door"
+            recipient:
+                name: "Merlion"
+                phone_number: "+6500000000"
+                location:
+                    address: "20 Esplanade Drive"
+                    latitude: 1.2857488
+                    longitude: 103.8548608
+                notes: "use lift A and leave at the front door"
+            amount: 23.50
+            payment_method: "PAID"
+            description: "Refreshing drink"
+            delivery_tasks:
+                age_validation_required: false
+    CreateOrderResponse:
+        title: Create Order Response
+        $ref: "#/definitions/CreateOrder"
+    GetOrderResponse:
+        title: Get Order Response
+        $ref: "#/definitions/Order"
+    GetProofOfDeliveryResponse:
+        title: Get Proof of Delivery Response
+        $ref: "#/definitions/ProofOfDelivery"
+    GetProofOfPickupResponse:
+        title: Get Proof of Pickup Response
+        $ref: "#/definitions/ProofOfPickup"
+    GetProofOfReturnResponse:
+        title: Get Proof of Return Response
+        $ref: "#/definitions/ProofOfReturn"
+    GetOrderCoordinateResponse:
+        title: Get Order Coordinate Response
+        type: object
+        properties:
+            client_order_id:
+                type: string
+            latitude:
+                $ref: "#/definitions/Latitude"
+            longitude:
+                $ref: "#/definitions/Longitude"
+            updated_at:
+                $ref: "#/definitions/Timestamp"
+        required:
+            - latitude
+            - longitude
+    CancelOrderRequest:
+        title: Cancel Order Request
+        type: object
+        properties:
+            reason:
+                type: string
+                enum:
+                    - DELIVERY_ETA_TOO_LONG
+                    - MISTAKE_ERROR
+                    - REASON_UNKNOWN
+                description: >-
+                    Acceptable Reasons:
+                      * `DELIVERY_ETA_TOO_LONG` - Before promised delivery time, customer believes that the ETA is too long.
+                      * `MISTAKE_ERROR` - Customer placed order in error/accidentally or with incorrect specifications (i.e. preorder, incorrect payment type).
+                      * `REASON_UNKNOWN` - Reason for failure is not available. VENDOR: Vendor initiated, CUSTOMER: Customer initiated, PLATFORM: Unknown who initiated.
+        required:
+            - reason
+        example:
+            reason: MISTAKE_ERROR
+    UpdateOrderRequest:
+        title: Update Order Request
+        type: object
+        properties:
+            payment_method:
+                $ref: "#/definitions/PaymentMethod"
+            amount:
+                title: Amount
+                description: In case a driver (of the vendor or of an external logistics provider) delivers the order to the customer, this is the amount of money to get from the customer.
+                type: number
+                default: 0
+                minimum: 0
+                example: 123.45
+            location:
+                title: Location
+                type: object
+                properties:
+                    address:
+                        $ref: "#/definitions/Street"
+                    latitude:
+                        $ref: "#/definitions/Latitude"
+                    longitude:
+                        $ref: "#/definitions/Longitude"
+                    notes:
+                        type: string
+                        maxLength: 2048
+                required:
+                    - latitude
+                    - longitude
+            description:
+                $ref: "#/definitions/Description"
+        example:
+            payment_method: "PAID"
+            amount: 0
+            location:
+                address: "1 2nd Street #08-01"
+                latitude: 1.2923742
+                longitude: 103.8486029
+                notes: "right at the street crossing"
+            description: "drinks and meals"
+    UpdateOrderResponse:
+        title: Update Order Response
+        $ref: "#/definitions/UpdateOrder"
+    ErrorResponse:
+        title: Error Response
+        type: object
+        properties:
+            message:
+                type: string
+        required:
+            - message
+    ErrorMessagesModel:
+        type: object
+        properties:
+            message:
+                type: string
+    Error500ResponseArray:
+        title: Error Response
+        type: object
+        items:
+            $ref: "#/definitions/ErrorMessagesModel"
+        example:
+            - message: "Unable to proceed, something went wrong"
+            - message: "Unable to parse Vendor from Client ID"
+            - message: "Unable to translate Postal Code"
+    Error422ResponseArray:
+        title: Error Response
+        type: object
+        items:
+            $ref: "#/definitions/ErrorMessagesModel"
+        example:
+            - message: "No Branch found that is close enough to the given sender coordinates"
+            - message: "Unable to process order"
+            - message: "No Branch found that is close enough to the given sender coordinates"
+            - message: "Multiple Branches found that are close enough to the given sender coordinates"
+            - message: "unable to accept order outside operating hours"
+    ErrorResponseForProofOfDelivery:
+        title: Error Response
+        type: object
+        properties:
+            message:
+                type: string
+        required:
+            - message
+    ErrorResponseForProofOfPickup:
+        title: Error Response
+        type: object
+        properties:
+            message:
+                type: string
+        required:
+            - message
+    ErrorResponseForProofOfReturn:
+        title: Error Response
+        type: object
+        properties:
+            message:
+                type: string
+        required:
+            - message
+    EstimateOrderRequest:
+        title: Estimate Order Request
+        type: object
+        properties:
+            client_order_id:
+                type: string
+            sender:
+                $ref: "#/definitions/Sender"
+            recipient:
+                $ref: "#/definitions/ContactWithOptionalFields"
+            payment_method:
+                $ref: "#/definitions/PaymentMethod"
+            coldbag_needed:
+                $ref: "#/definitions/Boolean"
+            amount:
+                $ref: "#/definitions/Price"
+            description:
+                $ref: "#/definitions/Description"
+        required:
+            - recipient
+            - amount
+            - description
+        example:
+            sender:
+                name: "Pandago"
+                phone_number: "+6500000000"
+                location:
+                    address: "1 2nd Street #08-01"
+                    latitude: 1.2923742
+                    longitude: 103.8486029
+                notes: "use the left side door"
+            recipient:
+                name: "Merlion"
+                location:
+                    address: "20 Esplanade Drive"
+                    latitude: 1.2857488
+                    longitude: 103.8548608
+                notes: "use lift A and leave at the front door"
+                phone_number: "+6500000000"
+            amount: 23.50
+            payment_method: "PAID"
+            description: "Refreshing drink"
+    EstimateOrderFeeResponse:
+        title: Estimate Order Fee Response
+        type: object
+        properties:
+            client_order_id:
+                type: string
+            estimate_delivery_fee:
+                $ref: "#/definitions/Price"
+    EstimateOrderTimeResponse:
+        title: Estimate Order Time Response
+        type: object
+        properties:
+            client_order_id:
+                type: string
+            estimate_pickup_time:
+                type: string
+            estimate_delivery_time:
+                type: string
+    CreateOrUpdateOutletRequest:
+        title: Create or Update an Outlet Response
+        type: object
+        properties:
+            name:
+                $ref: "#/definitions/Name"
+            address:
+                $ref: "#/definitions/Address"
+            street:
+                $ref: "#/definitions/Street"
+            street_number:
+                $ref: "#/definitions/StreetNumber"
+            building:
+                $ref: "#/definitions/Building"
+            district:
+                $ref: "#/definitions/District"
+            postal_code:
+                $ref: "#/definitions/PostalCode"
+            rider_instructions:
+                $ref: "#/definitions/RiderInstructions"
+            latitude:
+                $ref: "#/definitions/Latitude"
+            longitude:
+                $ref: "#/definitions/Longitude"
+            city:
+                $ref: "#/definitions/City"
+            phone_number:
+                $ref: "#/definitions/PhoneNumber"
+            currency:
+                $ref: "#/definitions/Currency"
+            locale:
+                $ref: "#/definitions/Locale"
+            description:
+                type: string
+            halal:
+                $ref: "#/definitions/Halal"
+            add_user:
+                type: array
+                items:
+                    type: string
+                    format: "email"
+            delete_user:
+                type: array
+                items:
+                    type: string
+                    format: "email"
+        required:
+            - name
+            - address
+            - latitude
+            - longitude
+            - city
+            - phone_number
+            - currency
+            - locale
+        example:
+            name: "Order Anytime Delivery Anywhere"
+            address: "1 2nd Street #08-01"
+            latitude: 1.2923742
+            longitude: 103.8486029
+            city: "Singapore"
+            phone_number: "+6587654321"
+            currency: "SGD"
+            locale: "en-SG"
+            description: "any items are for sale"
+            add_user:
+                - example@email.com
+                - example2@email.com

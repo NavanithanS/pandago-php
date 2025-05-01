@@ -28,3 +28,12 @@ Homestead.json
 .env.production
 .phpactor.json
 auth.json
+
+/.idea
+/.vscode
+/coverage
+/composer.lock
+/phpunit.xml.bak
+/phpunit.xml.dist
+.DS_Store
+Thumbs.db
