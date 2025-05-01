@@ -30,10 +30,11 @@ class CancelOrderRequest
      */
     public function __construct(string $reason)
     {
+        // Modified validation to ensure proper array format
         $this->validate([
             'reason' => $reason,
         ], [
-            'reason' => 'required|string|in:' . implode(',', self::$validReasons),
+            'reason' => 'required|in:' . implode(',', self::$validReasons),
         ]);
 
         $this->reason = $reason;

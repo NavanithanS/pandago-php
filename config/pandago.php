@@ -31,7 +31,7 @@ return [
     | Format: pandago.api.my.*
     |
     */
-    'scope'       => env('PANDAGO_SCOPE'),
+    'scope'       => env('PANDAGO_SCOPE', 'pandago.api.my.*'),
 
     /*
     |--------------------------------------------------------------------------

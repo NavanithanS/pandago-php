@@ -1,0 +1,208 @@
+<?php
+namespace Nava\Pandago\Tests\Unit\Models\Outlet;
+
+use Nava\Pandago\Exceptions\ValidationException;
+use Nava\Pandago\Models\Outlet\CreateOutletRequest;
+use Nava\Pandago\Tests\TestCase;
+
+class CreateOutletRequestTest extends TestCase
+{
+    /**
+     * Test creating a valid outlet request.
+     *
+     * @return void
+     */
+    public function testConstructWithValidParameters()
+    {
+        $request = new CreateOutletRequest(
+            'Trilobyte',
+            '1st Floor, No 8, Jalan Laguna 1',
+            5.3731476,
+            100.4068053,
+            'Prai',
+            '+601110550716',
+            'MYR',
+            'en-MY',
+            'My store description'
+        );
+
+        $this->assertEquals('Trilobyte', $request->toArray()['name']);
+        $this->assertEquals('1st Floor, No 8, Jalan Laguna 1', $request->toArray()['address']);
+        $this->assertEquals(5.3731476, $request->toArray()['latitude']);
+        $this->assertEquals(100.4068053, $request->toArray()['longitude']);
+        $this->assertEquals('Prai', $request->toArray()['city']);
+        $this->assertEquals('+601110550716', $request->toArray()['phone_number']);
+        $this->assertEquals('MYR', $request->toArray()['currency']);
+        $this->assertEquals('en-MY', $request->toArray()['locale']);
+        $this->assertEquals('My store description', $request->toArray()['description']);
+    }
+
+    /**
+     * Test creating an outlet request with invalid parameters.
+     *
+     * @return void
+     */
+    public function testConstructWithInvalidParameters()
+    {
+        $this->expectException(ValidationException::class);
+
+        // Empty name (should fail validation)
+        new CreateOutletRequest(
+            '', // empty name
+            '1st Floor, No 8, Jalan Laguna 1',
+            5.3731476,
+            100.4068053,
+            'Prai',
+            '+601110550716',
+            'MYR',
+            'en-MY'
+        );
+    }
+
+    /**
+     * Test creating an outlet request from an array.
+     *
+     * @return void
+     */
+    public function testFromArray()
+    {
+        $data = [
+            'name'               => 'Trilobyte',
+            'address'            => '1st Floor, No 8, Jalan Laguna 1',
+            'latitude'           => 5.3731476,
+            'longitude'          => 100.4068053,
+            'city'               => 'Prai',
+            'phone_number'       => '+601110550716',
+            'currency'           => 'MYR',
+            'locale'             => 'en-MY',
+            'description'        => 'My store description',
+            'street'             => 'Jalan Laguna 1',
+            'street_number'      => '8',
+            'building'           => '1st Floor',
+            'district'           => 'Seberang Perai',
+            'postal_code'        => '13600',
+            'rider_instructions' => 'Use the left side door',
+            'halal'              => true,
+            'add_user'           => ['chalit@example.com', 'guangyou@example.com'],
+        ];
+
+        $request = CreateOutletRequest::fromArray($data);
+
+        $array = $request->toArray();
+        $this->assertEquals('Trilobyte', $array['name']);
+        $this->assertEquals('1st Floor, No 8, Jalan Laguna 1', $array['address']);
+        $this->assertEquals(5.3731476, $array['latitude']);
+        $this->assertEquals(100.4068053, $array['longitude']);
+        $this->assertEquals('Prai', $array['city']);
+        $this->assertEquals('+601110550716', $array['phone_number']);
+        $this->assertEquals('MYR', $array['currency']);
+        $this->assertEquals('en-MY', $array['locale']);
+        $this->assertEquals('My store description', $array['description']);
+        $this->assertEquals('Jalan Laguna 1', $array['street']);
+        $this->assertEquals('8', $array['street_number']);
+        $this->assertEquals('1st Floor', $array['building']);
+        $this->assertEquals('Seberang Perai', $array['district']);
+        $this->assertEquals('13600', $array['postal_code']);
+        $this->assertEquals('Use the left side door', $array['rider_instructions']);
+        $this->assertTrue($array['halal']);
+        $this->assertEquals(['chalit@example.com', 'guangyou@example.com'], $array['add_user']);
+    }
+
+    /**
+     * Test setting optional parameters.
+     *
+     * @return void
+     */
+    public function testSetters()
+    {
+        $request = new CreateOutletRequest(
+            'Trilobyte',
+            '1st Floor, No 8, Jalan Laguna 1',
+            5.3731476,
+            100.4068053,
+            'Prai',
+            '+601110550716',
+            'MYR',
+            'en-MY'
+        );
+
+        $request->setStreet('Jalan Laguna 1');
+        $request->setStreetNumber('8');
+        $request->setBuilding('1st Floor');
+        $request->setDistrict('Seberang Perai');
+        $request->setPostalCode('13600');
+        $request->setRiderInstructions('Use the left side door');
+        $request->setHalal(true);
+        $request->setAddUsers(['chalit@example.com', 'guangyou@example.com']);
+        $request->setDeleteUsers(['olduser@example.com']);
+
+        $array = $request->toArray();
+        $this->assertEquals('Jalan Laguna 1', $array['street']);
+        $this->assertEquals('8', $array['street_number']);
+        $this->assertEquals('1st Floor', $array['building']);
+        $this->assertEquals('Seberang Perai', $array['district']);
+        $this->assertEquals('13600', $array['postal_code']);
+        $this->assertEquals('Use the left side door', $array['rider_instructions']);
+        $this->assertTrue($array['halal']);
+        $this->assertEquals(['chalit@example.com', 'guangyou@example.com'], $array['add_user']);
+        $this->assertEquals(['olduser@example.com'], $array['delete_user']);
+    }
+
+    /**
+     * Test validation for setter methods.
+     *
+     * @return void
+     */
+    public function testSetterValidation()
+    {
+        $request = new CreateOutletRequest(
+            'Trilobyte',
+            '1st Floor, No 8, Jalan Laguna 1',
+            5.3731476,
+            100.4068053,
+            'Prai',
+            '+601110550716',
+            'MYR',
+            'en-MY'
+        );
+
+        $this->expectException(ValidationException::class);
+
+        // Generate a string that exceeds the max length (300 characters)
+        $longString = str_repeat('a', 301);
+        $request->setStreet($longString);
+    }
+
+    /**
+     * Test toArray method.
+     *
+     * @return void
+     */
+    public function testToArray()
+    {
+        $request = new CreateOutletRequest(
+            'Trilobyte',
+            '1st Floor, No 8, Jalan Laguna 1',
+            5.3731476,
+            100.4068053,
+            'Prai',
+            '+601110550716',
+            'MYR',
+            'en-MY',
+            'My store description'
+        );
+
+        $array = $request->toArray();
+
+        $this->assertIsArray($array);
+        $this->assertArrayHasKey('name', $array);
+        $this->assertArrayHasKey('address', $array);
+        $this->assertArrayHasKey('latitude', $array);
+        $this->assertArrayHasKey('longitude', $array);
+        $this->assertArrayHasKey('city', $array);
+        $this->assertArrayHasKey('phone_number', $array);
+        $this->assertArrayHasKey('currency', $array);
+        $this->assertArrayHasKey('locale', $array);
+        $this->assertArrayHasKey('description', $array);
+    }
+}

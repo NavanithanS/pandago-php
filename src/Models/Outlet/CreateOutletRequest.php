@@ -94,6 +94,11 @@ class CreateOutletRequest
     protected $addUsers;
 
     /**
+     * @var array|null
+     */
+    protected $deleteUsers;
+
+    /**
      * CreateOutletRequest constructor.
      *
      * @param string $name
@@ -118,7 +123,7 @@ class CreateOutletRequest
         string $locale,
         ?string $description = null
     ) {
-        $this->validate([
+        $data = [
             'name'        => $name,
             'address'     => $address,
             'latitude'    => $latitude,
@@ -127,8 +132,13 @@ class CreateOutletRequest
             'phoneNumber' => $phoneNumber,
             'currency'    => $currency,
             'locale'      => $locale,
-            'description' => $description,
-        ], [
+        ];
+
+        if (null !== $description) {
+            $data['description'] = $description;
+        }
+
+        $this->validate($data, [
             'name'        => 'required|string|max:300',
             'address'     => 'required|string|max:255',
             'latitude'    => 'required|numeric',
@@ -189,7 +199,7 @@ class CreateOutletRequest
         }
 
         if (isset($data['postal_code'])) {
-            $instance->setPostalCode($data['postal_code']);
+            $instance->setPostalCode((string) $data['postal_code']);
         }
 
         if (isset($data['rider_instructions'])) {
@@ -204,6 +214,10 @@ class CreateOutletRequest
             $instance->setAddUsers($data['add_user']);
         }
 
+        if (isset($data['delete_user'])) {
+            $instance->setDeleteUsers($data['delete_user']);
+        }
+
         return $instance;
     }
 
@@ -212,9 +226,16 @@ class CreateOutletRequest
      *
      * @param string $street
      * @return $this
+     * @throws ValidationException
      */
     public function setStreet(string $street): self
     {
+        $this->validate([
+            'street' => $street,
+        ], [
+            'street' => 'string|max:300',
+        ]);
+
         $this->street = $street;
         return $this;
     }
@@ -224,9 +245,16 @@ class CreateOutletRequest
      *
      * @param string $streetNumber
      * @return $this
+     * @throws ValidationException
      */
     public function setStreetNumber(string $streetNumber): self
     {
+        $this->validate([
+            'streetNumber' => $streetNumber,
+        ], [
+            'streetNumber' => 'string|max:120',
+        ]);
+
         $this->streetNumber = $streetNumber;
         return $this;
     }
@@ -236,9 +264,16 @@ class CreateOutletRequest
      *
      * @param string $building
      * @return $this
+     * @throws ValidationException
      */
     public function setBuilding(string $building): self
     {
+        $this->validate([
+            'building' => $building,
+        ], [
+            'building' => 'string|max:120',
+        ]);
+
         $this->building = $building;
         return $this;
     }
@@ -248,9 +283,16 @@ class CreateOutletRequest
      *
      * @param string $district
      * @return $this
+     * @throws ValidationException
      */
     public function setDistrict(string $district): self
     {
+        $this->validate([
+            'district' => $district,
+        ], [
+            'district' => 'string|max:300',
+        ]);
+
         $this->district = $district;
         return $this;
     }
@@ -260,9 +302,16 @@ class CreateOutletRequest
      *
      * @param string $postalCode
      * @return $this
+     * @throws ValidationException
      */
     public function setPostalCode(string $postalCode): self
     {
+        $this->validate([
+            'postalCode' => $postalCode,
+        ], [
+            'postalCode' => 'string|max:120',
+        ]);
+
         $this->postalCode = $postalCode;
         return $this;
     }
@@ -272,9 +321,16 @@ class CreateOutletRequest
      *
      * @param string $riderInstructions
      * @return $this
+     * @throws ValidationException
      */
     public function setRiderInstructions(string $riderInstructions): self
     {
+        $this->validate([
+            'riderInstructions' => $riderInstructions,
+        ], [
+            'riderInstructions' => 'string|max:500',
+        ]);
+
         $this->riderInstructions = $riderInstructions;
         return $this;
     }
@@ -300,6 +356,18 @@ class CreateOutletRequest
     public function setAddUsers(array $users): self
     {
         $this->addUsers = $users;
+        return $this;
+    }
+
+    /**
+     * Set the users to delete.
+     *
+     * @param array $users
+     * @return $this
+     */
+    public function setDeleteUsers(array $users): self
+    {
+        $this->deleteUsers = $users;
         return $this;
     }
 
@@ -355,6 +423,10 @@ class CreateOutletRequest
 
         if (null !== $this->addUsers) {
             $data['add_user'] = $this->addUsers;
+        }
+
+        if (null !== $this->deleteUsers) {
+            $data['delete_user'] = $this->deleteUsers;
         }
 
         return $data;

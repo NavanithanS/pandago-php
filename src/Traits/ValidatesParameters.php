@@ -2,7 +2,6 @@
 namespace Nava\Pandago\Traits;
 
 use Nava\Pandago\Exceptions\ValidationException;
-use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validation;
 
 trait ValidatesParameters
@@ -16,118 +15,118 @@ trait ValidatesParameters
      */
     protected function validate(array $data, array $rules): void
     {
-        $constraints = $this->parseRules($rules);
-
-        $validator = Validation::createValidator();
-
-        $violations = $validator->validate($data, new Assert\Collection($constraints));
-
-        if (count($violations) > 0) {
-            $errors = [];
-
-            foreach ($violations as $violation) {
-                $propertyPath          = str_replace(['[', ']'], ['', ''], $violation->getPropertyPath());
-                $errors[$propertyPath] = $violation->getMessage();
-            }
-
-            throw new ValidationException('Validation failed', $errors);
-        }
-    }
-
-    /**
-     * Parse the rules into Symfony validator constraints.
-     *
-     * @param array $rules
-     * @return array
-     */
-    protected function parseRules(array $rules): array
-    {
-        $constraints = [];
+        $errors = [];
 
         foreach ($rules as $field => $rule) {
-            $constraints[$field] = $this->parseRule($rule);
+            // Check if the field is required and not provided or empty
+            if (strpos($rule, 'required') !== false) {
+                if (! isset($data[$field]) || (is_string($data[$field]) && trim($data[$field]) === '')) {
+                    $errors[$field] = 'The ' . $field . ' field is required.';
+                    continue;
+                }
+            } elseif (! isset($data[$field])) {
+                // Skip validation for optional fields that are not provided
+                continue;
+            }
+
+            // Validate field against its rules
+            $fieldErrors = $this->validateField($field, $data[$field], $rule);
+            if (! empty($fieldErrors)) {
+                $errors[$field] = $fieldErrors;
+            }
         }
 
-        return $constraints;
+        // If we have any errors, throw an exception
+        if (! empty($errors)) {
+            throw new ValidationException('Validation failed: ' . json_encode($errors), $errors);
+        }
     }
 
     /**
-     * Parse a single rule into a Symfony validator constraint.
+     * Validate a single field against its rules.
      *
-     * @param string $rule
-     * @return Assert\Required|Assert\Optional
+     * @param string $field
+     * @param mixed $value
+     * @param string $ruleString
+     * @return string|null
      */
-    protected function parseRule(string $rule)
+    protected function validateField(string $field, $value, string $ruleString): ?string
     {
-        $fieldConstraints = [];
-        $rules            = explode('|', $rule);
-        $isRequired       = in_array('required', $rules);
+        $rules = explode('|', $ruleString);
 
         foreach ($rules as $rule) {
+            // Skip already checked required rule
             if ('required' === $rule) {
                 continue;
             }
 
+            // Parse rule with parameters
             if (strpos($rule, ':') !== false) {
-                list($ruleName, $ruleValue) = explode(':', $rule);
-                $ruleValues                 = explode(',', $ruleValue);
+                list($ruleName, $ruleParams) = explode(':', $rule, 2);
+                $ruleValues                  = explode(',', $ruleParams);
 
                 switch ($ruleName) {
                     case 'in':
-                        $fieldConstraints[] = new Assert\Choice([
-                            'choices' => $ruleValues,
-                            'message' => 'This value should be one of {{ choices }}.',
-                        ]);
+                        if (! in_array($value, $ruleValues)) {
+                            return "The {$field} must be one of: " . implode(', ', $ruleValues);
+                        }
                         break;
-                    case 'min':
-                        $fieldConstraints[] = new Assert\Length([
-                            'min'        => (int) $ruleValue,
-                            'minMessage' => 'This value is too short. It should have {{ limit }} character or more.',
-                        ]);
-                        break;
+
                     case 'max':
-                        $fieldConstraints[] = new Assert\Length([
-                            'max'        => (int) $ruleValue,
-                            'maxMessage' => 'This value is too long. It should have {{ limit }} character or less.',
-                        ]);
+                        if (is_string($value)) {
+                            if (mb_strlen($value) > (int) $ruleValues[0]) {
+                                return "The {$field} must not be greater than {$ruleValues[0]} characters.";
+                            }
+                        } elseif (is_numeric($value) && ! is_string($value)) {
+                            if ($value > (float) $ruleValues[0]) {
+                                return "The {$field} must not be greater than {$ruleValues[0]}.";
+                            }
+                        }
+                        break;
+
+                    case 'min':
+                        if (is_string($value)) {
+                            if (mb_strlen($value) < (int) $ruleValues[0]) {
+                                return "The {$field} must be at least {$ruleValues[0]} characters.";
+                            }
+                        } elseif (is_numeric($value) && ! is_string($value)) {
+                            if ($value < (float) $ruleValues[0]) {
+                                return "The {$field} must be at least {$ruleValues[0]}.";
+                            }
+                        }
                         break;
                 }
             } else {
+                // Simple rules without parameters
                 switch ($rule) {
                     case 'string':
-                        $fieldConstraints[] = new Assert\Type([
-                            'type'    => 'string',
-                            'message' => 'This value should be of type {{ type }}.',
-                        ]);
+                        if (! is_string($value)) {
+                            return "The {$field} must be a string.";
+                        }
                         break;
+
                     case 'numeric':
-                    case 'number':
-                        $fieldConstraints[] = new Assert\Type([
-                            'type'    => 'numeric',
-                            'message' => 'This value should be of type {{ type }}.',
-                        ]);
+                        if (! is_numeric($value)) {
+                            return "The {$field} must be numeric.";
+                        }
                         break;
+
                     case 'integer':
                     case 'int':
-                        $fieldConstraints[] = new Assert\Type([
-                            'type'    => 'integer',
-                            'message' => 'This value should be of type {{ type }}.',
-                        ]);
+                        if (! is_int($value) && ! ctype_digit((string) $value)) {
+                            return "The {$field} must be an integer.";
+                        }
                         break;
+
                     case 'email':
-                        $fieldConstraints[] = new Assert\Email([
-                            'message' => 'This value is not a valid email address.',
-                        ]);
+                        if (! filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                            return "The {$field} must be a valid email address.";
+                        }
                         break;
                 }
             }
         }
 
-        $constraintCollection = new Assert\Collection([
-            'fields'           => $fieldConstraints,
-            'allowExtraFields' => true,
-        ]);
-
-        return $isRequired ? new Assert\Required($constraintCollection) : new Assert\Optional($constraintCollection);
+        return null;
     }
 }

@@ -39,12 +39,17 @@ class Location
      */
     public function __construct(string $address, float $latitude, float $longitude, ?string $postalCode = null)
     {
-        $this->validate([
-            'address'    => $address,
-            'latitude'   => $latitude,
-            'longitude'  => $longitude,
-            'postalCode' => $postalCode,
-        ], [
+        $data = [
+            'address'   => $address,
+            'latitude'  => $latitude,
+            'longitude' => $longitude,
+        ];
+
+        if (null !== $postalCode) {
+            $data['postalCode'] = $postalCode;
+        }
+
+        $this->validate($data, [
             'address'    => 'required|string|max:255',
             'latitude'   => 'required|numeric',
             'longitude'  => 'required|numeric',
