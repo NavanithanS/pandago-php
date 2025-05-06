@@ -31,9 +31,11 @@ class OrderCancellationIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        // Skip integration tests if no API credentials are provided
-        if (empty(getenv('PANDAGO_CLIENT_ID')) || empty(getenv('PANDAGO_KEY_ID')) || empty(getenv('PANDAGO_SCOPE'))) {
-            $this->markTestSkipped('Integration tests require API credentials. Set the PANDAGO_CLIENT_ID, PANDAGO_KEY_ID, and PANDAGO_SCOPE environment variables to run them.');
+        // Skip integration tests if required config values are missing
+        if (! $this->checkRequiredConfig(['client_id', 'key_id', 'scope'])) {
+            $this->markTestSkipped(
+                'Integration tests require API credentials. Set them in tests/config.php to run the tests.'
+            );
         }
 
         $this->client = Client::fromArray($this->getConfig());

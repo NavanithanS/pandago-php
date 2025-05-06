@@ -1,6 +1,7 @@
 <?php
 namespace Nava\Pandago\Tests\Unit\Auth;
 
+use Firebase\JWT\JWT;
 use Mockery;
 use Nava\Pandago\Auth\TokenManager;
 use Nava\Pandago\Config;
@@ -13,10 +14,15 @@ use Psr\Log\NullLogger;
 
 class TokenManagerTest extends TestCase
 {
+    /**
+     * @runInSeparateProcess
+     */
     public function testGetToken()
     {
-        $config = Config::fromArray($this->getConfig());
+        // Use mock to avoid actual JWT signing
+        $this->mockJwtEncoding();
 
+        $config = Config::fromArray($this->getConfig());
         $stream = Mockery::mock(StreamInterface::class);
         $stream->shouldReceive('getContents')
             ->once()
@@ -47,8 +53,14 @@ class TokenManagerTest extends TestCase
         $this->assertEquals('test-token', $token->getAccessToken());
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testReuseToken()
     {
+        // Use mock to avoid actual JWT signing
+        $this->mockJwtEncoding();
+
         $config = Config::fromArray($this->getConfig());
 
         $stream = Mockery::mock(StreamInterface::class);
@@ -79,6 +91,18 @@ class TokenManagerTest extends TestCase
         $token2 = $tokenManager->getToken();
 
         $this->assertSame($token1, $token2);
+    }
+
+    /**
+     * Mock the JWT::encode function to avoid actual signing
+     */
+    protected function mockJwtEncoding()
+    {
+        // Create a mock for JWT class
+        $mock = Mockery::mock('alias:Firebase\JWT\JWT');
+        $mock->shouldReceive('encode')
+            ->withAnyArgs()
+            ->andReturn('mocked.jwt.token');
     }
 
     protected function tearDown(): void

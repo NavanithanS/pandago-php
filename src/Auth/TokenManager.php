@@ -132,9 +132,22 @@ class TokenManager
 
         $privateKey = $this->config->getPrivateKey();
 
-        return JWT::encode($payload, $privateKey, 'RS256', null, [
-            'kid' => $this->config->getKeyId(),
-        ]);
+        // Handle file paths
+        if (file_exists($privateKey)) {
+            try {
+                $privateKey = file_get_contents($privateKey);
+            } catch (\Exception $e) {
+                throw new AuthenticationException('Failed to read private key file: ' . $e->getMessage());
+            }
+        }
+
+        try {
+            return JWT::encode($payload, $privateKey, 'RS256', null, [
+                'kid' => $this->config->getKeyId(),
+            ]);
+        } catch (\Exception $e) {
+            throw new AuthenticationException('Failed to encode JWT: ' . $e->getMessage());
+        }
     }
 
     /**

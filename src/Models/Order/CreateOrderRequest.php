@@ -276,4 +276,16 @@ class CreateOrderRequest
 
         return $data;
     }
+
+    /**
+     * Set if a coldbag is needed.
+     *
+     * @param bool $coldbagNeeded
+     * @return $this
+     */
+    public function setColdbagNeeded(bool $coldbagNeeded): self
+    {
+        $this->coldbagNeeded = $coldbagNeeded;
+        return $this;
+    }
 }
