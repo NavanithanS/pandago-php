@@ -141,6 +141,14 @@ class TokenManager
             }
         }
 
+        // Ensure the key has the correct format
+        if (strpos($privateKey, '-----BEGIN') === false) {
+            throw new AuthenticationException('Invalid private key format: Missing header');
+        }
+
+        // Some libraries require proper line endings
+        $privateKey = str_replace(["\r\n", "\n", "\r"], PHP_EOL, $privateKey);
+
         try {
             return JWT::encode($payload, $privateKey, 'RS256', null, [
                 'kid' => $this->config->getKeyId(),
