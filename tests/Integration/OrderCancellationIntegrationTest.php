@@ -78,27 +78,27 @@ class OrderCancellationIntegrationTest extends TestCase
         foreach ($validReasons as $reason) {
             // Create an order to cancel
             $location = new Location(
-                '670, Era Jaya',
-                7.3500280,
-                100.4374034
+                '20 Esplanade Drive',
+                1.2857488,
+                103.8548608
             );
-            $recipient = new Contact('Chalit', '+60125918131', $location);
+            $recipient = new Contact('Merlion', '+6500000000', $location);
 
             $request = new CreateOrderRequest(
                 $recipient,
-                349.50,
-                'Woodford Reserve Kentucky Bourbon'
+                23.50,
+                'Refreshing drink'
             );
 
             // Set sender
             $senderLocation = new Location(
-                '8, Jalan Laguna 1',
-                5.3731476,
-                100.4068053
+                '1 2nd Street #08-01',
+                1.2923742,
+                103.8486029
             );
             $sender = new Contact(
-                'GuangYou',
-                '+601110550716',
+                'Pandago',
+                '+6500000000',
                 $senderLocation
             );
             $request->setSender($sender);
@@ -163,27 +163,27 @@ class OrderCancellationIntegrationTest extends TestCase
     {
         // Create an order to cancel
         $location = new Location(
-            '670, Era Jaya',
-            7.3500280,
-            100.4374034
+            '20 Esplanade Drive',
+            1.2857488,
+            103.8548608
         );
-        $recipient = new Contact('Chalit', '+60125918131', $location);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
 
         $request = new CreateOrderRequest(
             $recipient,
-            349.50,
-            'Woodford Reserve Kentucky Bourbon'
+            23.50,
+            'Refreshing drink'
         );
 
         // Set sender
         $senderLocation = new Location(
-            '8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053
+            '1 2nd Street #08-01',
+            1.2923742,
+            103.8486029
         );
         $sender = new Contact(
-            'GuangYou',
-            '+601110550716',
+            'Pandago',
+            '+6500000000',
             $senderLocation
         );
         $request->setSender($sender);

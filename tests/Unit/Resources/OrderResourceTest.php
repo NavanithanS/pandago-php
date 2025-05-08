@@ -29,9 +29,9 @@ class OrderResourceTest extends TestCase
 
         $orderResource = new OrderResource($client);
 
-        $location  = new Location('670, Era Jaya', 7.3500280, 100.4374034);
-        $recipient = new Contact('Chalit', '+60125918131', $location);
-        $request   = new CreateOrderRequest($recipient, 349.50, 'Woodford Reserve Kentucky Bourbon');
+        $location  = new Location('20 Esplanade Drive', 1.2857488, 103.8548608);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $request   = new CreateOrderRequest($recipient, 23.50, 'Refreshing drink');
 
         $order = $orderResource->create($request);
 
@@ -111,8 +111,8 @@ class OrderResourceTest extends TestCase
             ->with('GET', '/orders/y0ud-000001/coordinates')
             ->andReturn([
                 'client_order_id' => 'client-ref-000001',
-                'latitude'        => 7.3500280,
-                'longitude'       => 100.4374034,
+                'latitude'        => 1.2857488,
+                'longitude'       => 103.8548608,
                 'updated_at'      => 1536802252,
             ]);
 
@@ -122,8 +122,8 @@ class OrderResourceTest extends TestCase
 
         $this->assertInstanceOf(OrderCoordinate::class, $coordinates);
         $this->assertEquals('client-ref-000001', $coordinates->getClientOrderId());
-        $this->assertEquals(7.3500280, $coordinates->getLatitude());
-        $this->assertEquals(100.4374034, $coordinates->getLongitude());
+        $this->assertEquals(1.2857488, $coordinates->getLatitude());
+        $this->assertEquals(103.8548608, $coordinates->getLongitude());
         $this->assertEquals(1536802252, $coordinates->getUpdatedAt());
     }
 
@@ -140,9 +140,9 @@ class OrderResourceTest extends TestCase
 
         $orderResource = new OrderResource($client);
 
-        $location  = new Location('670, Era Jaya', 7.3500280, 100.4374034);
-        $recipient = new Contact('Chalit', '+60125918131', $location);
-        $request   = new CreateOrderRequest($recipient, 349.50, 'Woodford Reserve Kentucky Bourbon');
+        $location  = new Location('20 Esplanade Drive', 1.2857488, 103.8548608);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $request   = new CreateOrderRequest($recipient, 23.50, 'Refreshing drink');
 
         $result = $orderResource->estimateFee($request);
 
@@ -164,9 +164,9 @@ class OrderResourceTest extends TestCase
 
         $orderResource = new OrderResource($client);
 
-        $location  = new Location('670, Era Jaya', 7.3500280, 100.4374034);
-        $recipient = new Contact('Chalit', '+60125918131', $location);
-        $request   = new CreateOrderRequest($recipient, 349.50, 'Woodford Reserve Kentucky Bourbon');
+        $location  = new Location('20 Esplanade Drive', 1.2857488, 103.8548608);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $request   = new CreateOrderRequest($recipient, 23.50, 'Refreshing drink');
 
         $result = $orderResource->estimateTime($request);
 

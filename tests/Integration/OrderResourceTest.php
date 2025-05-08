@@ -59,17 +59,17 @@ class OrderResourceTest extends TestCase
     {
         // Create recipient
         $location = new Location(
-            '670, Era Jaya',
-            7.3500280,
-            100.4374034
+            '20 Esplanade Drive',
+            1.2857488,
+            103.8548608
         );
-        $recipient = new Contact('Chalit', '+60125918131', $location);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
 
         // Create request
         $request = new CreateOrderRequest(
             $recipient,
-            349.50,
-            'Woodford Reserve Kentucky Bourbon'
+            23.50,
+            'Refreshing drink'
         );
 
         // Set client order ID to make it easier to track
@@ -85,13 +85,13 @@ class OrderResourceTest extends TestCase
         } else {
             // If no client vendor ID is provided, set a sender
             $senderLocation = new Location(
-                '8, Jalan Laguna 1',
-                5.3731476,
-                100.4068053
+                '1 2nd Street #08-01',
+                1.2923742,
+                103.8486029
             );
             $sender = new Contact(
-                'GuangYou',
-                '+601110550716',
+                'Pandago',
+                '+6500000000',
                 $senderLocation,
                 'use the left side door'
             );
@@ -111,7 +111,7 @@ class OrderResourceTest extends TestCase
             $this->assertNotEmpty($order->getOrderId());
             $this->assertEquals($clientOrderId, $order->getClientOrderId());
             $this->assertEquals('PAID', $order->getPaymentMethod());
-            $this->assertEquals(349.50, $order->getAmount());
+            $this->assertEquals(23.50, $order->getAmount());
             $this->assertTrue($order->isColdbagNeeded());
 
             // Assert sender is set correctly if using client vendor ID
@@ -120,14 +120,14 @@ class OrderResourceTest extends TestCase
             } else {
                 $sender = $order->getSender();
                 $this->assertInstanceOf(Contact::class, $sender);
-                $this->assertEquals('GuangYou', $sender->getName());
+                $this->assertEquals('Pandago', $sender->getName());
             }
 
             // Verify recipient
             $orderRecipient = $order->getRecipient();
             $this->assertInstanceOf(Contact::class, $orderRecipient);
-            $this->assertEquals('Chalit', $orderRecipient->getName());
-            $this->assertEquals('+60125918131', $orderRecipient->getPhoneNumber());
+            $this->assertEquals('Merlion', $orderRecipient->getName());
+            $this->assertEquals('+6500000000', $orderRecipient->getPhoneNumber());
 
             return $order;
         } catch (RequestException $e) {
@@ -213,27 +213,27 @@ class OrderResourceTest extends TestCase
     {
         // Create request for fee estimation
         $location = new Location(
-            '670, Era Jaya',
-            7.3500280,
-            100.4374034
+            '20 Esplanade Drive',
+            1.2857488,
+            103.8548608
         );
-        $recipient = new Contact('Chalit', '+60125918131', $location);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
 
         $request = new CreateOrderRequest(
             $recipient,
-            349.50,
-            'Woodford Reserve Kentucky Bourbon'
+            23.50,
+            'Refreshing drink'
         );
 
         // Set sender
         $senderLocation = new Location(
-            '8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053
+            '1 2nd Street #08-01',
+            1.2923742,
+            103.8486029
         );
         $sender = new Contact(
-            'GuangYou',
-            '+601110550716',
+            'Pandago',
+            '+6500000000',
             $senderLocation
         );
         $request->setSender($sender);
@@ -255,27 +255,27 @@ class OrderResourceTest extends TestCase
     {
         // Create request for time estimation
         $location = new Location(
-            '670, Era Jaya',
-            7.3500280,
-            100.4374034
+            '20 Esplanade Drive',
+            1.2857488,
+            103.8548608
         );
-        $recipient = new Contact('Chalit', '+60125918131', $location);
+        $recipient = new Contact('Merlion', '+6500000000', $location);
 
         $request = new CreateOrderRequest(
             $recipient,
-            349.50,
-            'Woodford Reserve Kentucky Bourbon'
+            23.50,
+            'Refreshing drink'
         );
 
         // Set sender
         $senderLocation = new Location(
-            '8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053
+            '1 2nd Street #08-01',
+            1.2923742,
+            103.8486029
         );
         $sender = new Contact(
-            'GuangYou',
-            '+601110550716',
+            'Pandago',
+            '+6500000000',
             $senderLocation
         );
         $request->setSender($sender);

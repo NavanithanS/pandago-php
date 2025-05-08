@@ -15,24 +15,24 @@ class OrderTest extends TestCase
             'order_id'              => 'y0ud-000001',
             'client_order_id'       => 'client-ref-000001',
             'sender'                => [
-                'name'         => 'GuangYou',
-                'phone_number' => '+601110550716',
+                'name'         => 'Pandago',
+                'phone_number' => '+6500000000',
                 'location'     => [
-                    'address'   => '8, Jalan Laguna 1',
-                    'latitude'  => 5.3731476,
-                    'longitude' => 100.4068053,
+                    'address'   => '1 2nd Street #08-01',
+                    'latitude'  => 1.2923742,
+                    'longitude' => 103.8486029,
                 ],
                 'notes'        => 'use the left side door',
             ],
             'recipient'             => [
-                'name'         => 'Chalit',
-                'phone_number' => '+60125918131',
+                'name'         => 'Merlion',
+                'phone_number' => '+6500000000',
                 'location'     => [
-                    'address'   => '670, Era Jaya',
-                    'latitude'  => 7.3500280,
-                    'longitude' => 100.4374034,
+                    'address'   => '20 Esplanade Drive',
+                    'latitude'  => 1.2857488,
+                    'longitude' => 103.8548608,
                 ],
-                'notes'        => 'leave at the front door',
+                'notes'        => 'use lift A and leave at the front door',
             ],
             'distance'              => 906.13,
             'payment_method'        => 'PAID',
@@ -80,30 +80,30 @@ class OrderTest extends TestCase
         // Check sender details
         $sender = $order->getSender();
         $this->assertInstanceOf(Contact::class, $sender);
-        $this->assertEquals('GuangYou', $sender->getName());
-        $this->assertEquals('+601110550716', $sender->getPhoneNumber());
+        $this->assertEquals('Pandago', $sender->getName());
+        $this->assertEquals('+6500000000', $sender->getPhoneNumber());
         $this->assertEquals('use the left side door', $sender->getNotes());
 
         // Check sender location
         $senderLocation = $sender->getLocation();
         $this->assertInstanceOf(Location::class, $senderLocation);
-        $this->assertEquals('8, Jalan Laguna 1', $senderLocation->getAddress());
-        $this->assertEquals(5.3731476, $senderLocation->getLatitude());
-        $this->assertEquals(100.4068053, $senderLocation->getLongitude());
+        $this->assertEquals('1 2nd Street #08-01', $senderLocation->getAddress());
+        $this->assertEquals(1.2923742, $senderLocation->getLatitude());
+        $this->assertEquals(103.8486029, $senderLocation->getLongitude());
 
         // Check recipient details
         $recipient = $order->getRecipient();
         $this->assertInstanceOf(Contact::class, $recipient);
-        $this->assertEquals('Chalit', $recipient->getName());
-        $this->assertEquals('+60125918131', $recipient->getPhoneNumber());
-        $this->assertEquals('leave at the front door', $recipient->getNotes());
+        $this->assertEquals('Merlion', $recipient->getName());
+        $this->assertEquals('+6500000000', $recipient->getPhoneNumber());
+        $this->assertEquals('use lift A and leave at the front door', $recipient->getNotes());
 
         // Check recipient location
         $recipientLocation = $recipient->getLocation();
         $this->assertInstanceOf(Location::class, $recipientLocation);
-        $this->assertEquals('670, Era Jaya', $recipientLocation->getAddress());
-        $this->assertEquals(7.3500280, $recipientLocation->getLatitude());
-        $this->assertEquals(100.4374034, $recipientLocation->getLongitude());
+        $this->assertEquals('20 Esplanade Drive', $recipientLocation->getAddress());
+        $this->assertEquals(1.2857488, $recipientLocation->getLatitude());
+        $this->assertEquals(103.8548608, $recipientLocation->getLongitude());
 
         // Check timeline
         $timeline = $order->getTimeline();
@@ -148,8 +148,8 @@ class OrderTest extends TestCase
         $order = new Order();
 
         // Test setters
-        $location  = new Location('Test Address', 1.234, 5.678);
-        $recipient = new Contact('Test Name', '+6599999999', $location);
+        $location  = new Location('10 Bayfront Avenue, Singapore 018956', 1.2839, 103.8607);
+        $recipient = new Contact('Test Name', '+6587654321', $location);
 
         $order->setClientOrderId('test-client-order');
         $order->setRecipient($recipient);
@@ -177,8 +177,8 @@ class OrderTest extends TestCase
     {
         $order = new Order();
 
-        $location  = new Location('Test Address', 1.234, 5.678);
-        $recipient = new Contact('Test Name', '+6599999999', $location);
+        $location  = new Location('1 Raffles Place, Singapore 048616', 1.2847, 103.8510);
+        $recipient = new Contact('Test Name', '+6591234567', $location);
 
         $order->setClientOrderId('test-client-order');
         $order->setRecipient($recipient);
