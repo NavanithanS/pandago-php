@@ -10,34 +10,9 @@ class CreateOrderRequest
     use ValidatesParameters;
 
     /**
-     * @var string|null
-     */
-    protected $clientOrderId;
-
-    /**
-     * @var Contact|null
-     */
-    protected $sender;
-
-    /**
-     * @var string|null
-     */
-    protected $clientVendorId;
-
-    /**
      * @var Contact
      */
     protected $recipient;
-
-    /**
-     * @var string
-     */
-    protected $paymentMethod;
-
-    /**
-     * @var bool
-     */
-    protected $coldbagNeeded;
 
     /**
      * @var float
@@ -45,19 +20,34 @@ class CreateOrderRequest
     protected $amount;
 
     /**
-     * @var float|null
-     */
-    protected $collectFromCustomer;
-
-    /**
      * @var string
      */
     protected $description;
 
     /**
-     * @var array
+     * @var Contact|string|null
      */
-    protected $deliveryTasks;
+    protected $sender;
+
+    /**
+     * @var string|null
+     */
+    protected $clientOrderId;
+
+    /**
+     * @var bool
+     */
+    protected $coldbagNeeded = false;
+
+    /**
+     * @var string
+     */
+    protected $paymentMethod = 'PAID';
+
+    /**
+     * @var float|null
+     */
+    protected $collectFromCustomer;
 
     /**
      * @var int|null
@@ -65,62 +55,49 @@ class CreateOrderRequest
     protected $preorderedFor;
 
     /**
-     * CreateOrderRequest constructor.
-     *
-     * @param Contact $recipient
-     * @param float $amount
-     * @param string $description
-     * @param string $paymentMethod
-     * @param bool $coldbagNeeded
-     * @throws ValidationException
+     * @var array
      */
-    public function __construct(
-        Contact $recipient,
-        float $amount,
-        string $description,
-        string $paymentMethod = 'PAID',
-        bool $coldbagNeeded = false
-    ) {
+    protected $deliveryTasks = ['age_validation_required' => false];
+
+    /**
+     * Constructor.
+     *
+     * @param Contact $recipient Recipient contact information
+     * @param float $amount Amount
+     * @param string $description Description
+     * @throws ValidationException If the parameters are invalid
+     */
+    public function __construct(Contact $recipient, float $amount, string $description)
+    {
         $this->validate([
-            'amount'        => $amount,
-            'description'   => $description,
-            'paymentMethod' => $paymentMethod,
-        ], [
-            'amount'        => 'required|numeric|min:0',
-            'description'   => 'required|string|max:200',
-            'paymentMethod' => 'required|string|in:PAID,CASH_ON_DELIVERY',
+            'recipient'   => [$recipient, 'required'],
+            'amount'      => [$amount, 'required', 'numeric', 'min:0'],
+            'description' => [$description, 'required', 'max:200'],
         ]);
 
-        $this->recipient     = $recipient;
-        $this->amount        = $amount;
-        $this->description   = $description;
-        $this->paymentMethod = $paymentMethod;
-        $this->coldbagNeeded = $coldbagNeeded;
-        $this->deliveryTasks = [
-            'age_validation_required' => false,
-        ];
+        $this->recipient   = $recipient;
+        $this->amount      = $amount;
+        $this->description = $description;
     }
 
     /**
-     * Create a new CreateOrderRequest instance from an array.
+     * Create a new instance from an array.
      *
-     * @param array $data
-     * @return self
-     * @throws ValidationException
+     * @param array $data Request data
+     * @return static
+     * @throws ValidationException If the data is invalid
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data)
     {
-        $instance = new self(
-            Contact::fromArray($data['recipient']),
-            $data['amount'],
-            $data['description'],
-            $data['payment_method'] ?? 'PAID',
-            $data['coldbag_needed'] ?? false
-        );
+        $recipient = isset($data['recipient'])
+        ? Contact::fromArray($data['recipient'])
+        : null;
 
-        if (isset($data['client_order_id'])) {
-            $instance->setClientOrderId($data['client_order_id']);
-        }
+        $instance = new static(
+            $recipient,
+            $data['amount'] ?? 0,
+            $data['description'] ?? ''
+        );
 
         if (isset($data['sender'])) {
             if (isset($data['sender']['client_vendor_id'])) {
@@ -130,16 +107,28 @@ class CreateOrderRequest
             }
         }
 
+        if (isset($data['client_order_id'])) {
+            $instance->setClientOrderId($data['client_order_id']);
+        }
+
+        if (isset($data['payment_method'])) {
+            $instance->setPaymentMethod($data['payment_method']);
+        }
+
+        if (isset($data['coldbag_needed'])) {
+            $instance->setColdbagNeeded($data['coldbag_needed']);
+        }
+
         if (isset($data['collect_from_customer'])) {
             $instance->setCollectFromCustomer($data['collect_from_customer']);
         }
 
-        if (isset($data['delivery_tasks'])) {
-            $instance->setDeliveryTasks($data['delivery_tasks']);
-        }
-
         if (isset($data['preordered_for'])) {
             $instance->setPreorderedFor($data['preordered_for']);
+        }
+
+        if (isset($data['delivery_tasks'])) {
+            $instance->setDeliveryTasks($data['delivery_tasks']);
         }
 
         return $instance;
@@ -148,102 +137,225 @@ class CreateOrderRequest
     /**
      * Set the client order ID.
      *
-     * @param string $clientOrderId
+     * @param string $clientOrderId Client order ID
      * @return $this
      */
-    public function setClientOrderId(string $clientOrderId): self
+    public function setClientOrderId(string $clientOrderId)
     {
         $this->clientOrderId = $clientOrderId;
+
         return $this;
+    }
+
+    /**
+     * Get the client order ID.
+     *
+     * @return string|null
+     */
+    public function getClientOrderId()
+    {
+        return $this->clientOrderId;
     }
 
     /**
      * Set the sender.
      *
-     * @param Contact $sender
+     * @param Contact $sender Sender contact information
      * @return $this
      */
-    public function setSender(Contact $sender): self
+    public function setSender(Contact $sender)
     {
-        $this->sender         = $sender;
-        $this->clientVendorId = null;
+        $this->sender = $sender;
+
         return $this;
     }
 
     /**
      * Set the client vendor ID.
      *
-     * @param string $clientVendorId
+     * @param string $clientVendorId Client vendor ID
      * @return $this
      */
-    public function setClientVendorId(string $clientVendorId): self
+    public function setClientVendorId(string $clientVendorId)
     {
-        $this->clientVendorId = $clientVendorId;
-        $this->sender         = null;
+        $this->sender = $clientVendorId;
+
         return $this;
     }
 
     /**
-     * Set the collect from customer amount.
+     * Get the sender.
      *
-     * @param float $amount
-     * @return $this
-     * @throws ValidationException
+     * @return Contact|string|null
      */
-    public function setCollectFromCustomer(float $amount): self
+    public function getSender()
+    {
+        return $this->sender;
+    }
+
+    /**
+     * Set whether a cold bag is needed.
+     *
+     * @param bool $coldbagNeeded Whether a cold bag is needed
+     * @return $this
+     */
+    public function setColdbagNeeded(bool $coldbagNeeded)
+    {
+        $this->coldbagNeeded = $coldbagNeeded;
+
+        return $this;
+    }
+
+    /**
+     * Get whether a cold bag is needed.
+     *
+     * @return bool
+     */
+    public function isColdbagNeeded()
+    {
+        return $this->coldbagNeeded;
+    }
+
+    /**
+     * Set the payment method.
+     *
+     * @param string $paymentMethod Payment method (PAID or CASH_ON_DELIVERY)
+     * @return $this
+     * @throws ValidationException If the payment method is invalid
+     */
+    public function setPaymentMethod(string $paymentMethod)
+    {
+        $validMethods = ['PAID', 'CASH_ON_DELIVERY'];
+
+        if (! in_array($paymentMethod, $validMethods)) {
+            throw new ValidationException("Payment method must be one of: " . implode(', ', $validMethods));
+        }
+
+        $this->paymentMethod = $paymentMethod;
+
+        return $this;
+    }
+
+    /**
+     * Get the payment method.
+     *
+     * @return string
+     */
+    public function getPaymentMethod()
+    {
+        return $this->paymentMethod;
+    }
+
+    /**
+     * Set the amount to collect from customer.
+     *
+     * @param float $collectFromCustomer Amount to collect from customer
+     * @return $this
+     * @throws ValidationException If the amount is invalid
+     */
+    public function setCollectFromCustomer(float $collectFromCustomer)
     {
         $this->validate([
-            'collectFromCustomer' => $amount,
-        ], [
-            'collectFromCustomer' => 'numeric|min:0',
+            'collectFromCustomer' => [$collectFromCustomer, 'numeric', 'min:0'],
         ]);
 
-        $this->collectFromCustomer = $amount;
+        $this->collectFromCustomer = $collectFromCustomer;
+
         return $this;
     }
 
     /**
-     * Set the delivery tasks.
+     * Get the amount to collect from customer.
      *
-     * @param array $deliveryTasks
-     * @return $this
+     * @return float|null
      */
-    public function setDeliveryTasks(array $deliveryTasks): self
+    public function getCollectFromCustomer()
     {
-        $this->deliveryTasks = $deliveryTasks;
-        return $this;
-    }
-
-    /**
-     * Set age validation requirement.
-     *
-     * @param bool $required
-     * @return $this
-     */
-    public function setAgeValidationRequired(bool $required): self
-    {
-        $this->deliveryTasks['age_validation_required'] = $required;
-        return $this;
+        return $this->collectFromCustomer;
     }
 
     /**
      * Set the preordered for timestamp.
      *
-     * @param int $timestamp
+     * @param int $preorderedFor Unix timestamp
      * @return $this
      */
-    public function setPreorderedFor(int $timestamp): self
+    public function setPreorderedFor(int $preorderedFor)
     {
-        $this->preorderedFor = $timestamp;
+        $this->preorderedFor = $preorderedFor;
+
         return $this;
     }
 
     /**
-     * Convert the request to an array.
+     * Get the preordered for timestamp.
+     *
+     * @return int|null
+     */
+    public function getPreorderedFor()
+    {
+        return $this->preorderedFor;
+    }
+
+    /**
+     * Set the delivery tasks.
+     *
+     * @param array $deliveryTasks Delivery tasks
+     * @return $this
+     */
+    public function setDeliveryTasks(array $deliveryTasks)
+    {
+        $this->deliveryTasks = $deliveryTasks;
+
+        return $this;
+    }
+
+    /**
+     * Get the delivery tasks.
      *
      * @return array
      */
-    public function toArray(): array
+    public function getDeliveryTasks()
+    {
+        return $this->deliveryTasks;
+    }
+
+    /**
+     * Get the recipient.
+     *
+     * @return Contact
+     */
+    public function getRecipient()
+    {
+        return $this->recipient;
+    }
+
+    /**
+     * Get the amount.
+     *
+     * @return float
+     */
+    public function getAmount()
+    {
+        return $this->amount;
+    }
+
+    /**
+     * Get the description.
+     *
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->description;
+    }
+
+    /**
+     * Convert to array.
+     *
+     * @return array
+     */
+    public function toArray()
     {
         $data = [
             'recipient'      => $this->recipient->toArray(),
@@ -254,16 +366,16 @@ class CreateOrderRequest
             'delivery_tasks' => $this->deliveryTasks,
         ];
 
-        if (null !== $this->clientOrderId) {
-            $data['client_order_id'] = $this->clientOrderId;
+        if ($this->sender) {
+            if (is_string($this->sender)) {
+                $data['sender'] = ['client_vendor_id' => $this->sender];
+            } else {
+                $data['sender'] = $this->sender->toArray();
+            }
         }
 
-        if (null !== $this->sender) {
-            $data['sender'] = $this->sender->toArray();
-        } elseif (null !== $this->clientVendorId) {
-            $data['sender'] = [
-                'client_vendor_id' => $this->clientVendorId,
-            ];
+        if ($this->clientOrderId) {
+            $data['client_order_id'] = $this->clientOrderId;
         }
 
         if (null !== $this->collectFromCustomer) {
@@ -275,17 +387,5 @@ class CreateOrderRequest
         }
 
         return $data;
-    }
-
-    /**
-     * Set if a coldbag is needed.
-     *
-     * @param bool $coldbagNeeded
-     * @return $this
-     */
-    public function setColdbagNeeded(bool $coldbagNeeded): self
-    {
-        $this->coldbagNeeded = $coldbagNeeded;
-        return $this;
     }
 }
