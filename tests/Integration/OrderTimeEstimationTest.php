@@ -10,12 +10,11 @@ use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Tests\TestCase;
 
 /**
- * Test Cases for delivery fee estimation
+ * Test Cases for delivery time estimation
  *
- * 3.1.1: Get delivery fee estimate before commiting to an order (Happy Path)
- * 3.1.2: Get delivery fee estimate with address outside delivery area (Unhappy Path)
+ * 4.1.1: Get delivery estimate time before committing to an order (Happy Path)
  */
-class OrderFeeEstimationTest extends TestCase
+class OrderTimeEstimationTest extends TestCase
 {
     /**
      * @var \Nava\Pandago\PandagoClient
@@ -48,23 +47,23 @@ class OrderFeeEstimationTest extends TestCase
     }
 
     /**
-     * Test Case 3.1.1: Get delivery fee estimate before commiting to an order (Happy Path)
+     * Test Case 4.1.1: Get delivery estimate time before committing to an order (Happy Path)
      *
-     * Sends order details JSON to estimate the delivery fee from sender's location to recipient's address.
+     * Sends order details JSON to estimate the delivery time from sender's location to recipient's address.
      * Ensures recipient's address is within pandago delivery area.
      *
      * Steps:
-     * 1. [POST] Request to /orders/fee endpoint
+     * 1. [POST] Request to /orders/time endpoint
      * 2. Use authorization token
      * 3. Include sender attribute in the request body
      * 4. Expect 200 OK response
-     * 5. Verify response contains delivery estimates
+     * 5. Verify response contains delivery time estimates
      *
      * @return void
      */
-    public function testEstimateDeliveryFee()
+    public function testEstimateDeliveryTime()
     {
-        echo "\n\n✅ TEST CASE 3.1.1: Get delivery fee estimate before commiting to an order (Happy Path)\n";
+        echo "\n\n✅ TEST CASE 4.1.1: Get delivery estimate time before committing to an order (Happy Path)\n";
         echo "=================================================================================\n\n";
         echo "STEP 1: Prepare order request with sender and recipient information\n";
         echo "----------------------------------------------------------------\n";
@@ -79,7 +78,7 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-fee-' . uniqid();
+        $clientOrderId = 'test-time-' . uniqid();
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,             // Amount
@@ -89,7 +88,7 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Order request created with amount: 23.50\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender information - this is required for fee estimation
+        // Set sender information - this is required for time estimation
         $senderLocation = new Location(
             '1 2nd Street #08-01', // Address
             1.2923742,             // Latitude - Singapore
@@ -114,9 +113,9 @@ class OrderFeeEstimationTest extends TestCase
         $country     = $this->config->getCountry();
 
         // URLs as specified in the documentation
-        $sandboxUrl        = "https://pandago-api-sandbox.deliveryhero.io/{$country}/api/v1/orders/fee";
-        $productionUrlApac = "https://pandago-api-apse.deliveryhero.io/{$country}/api/v1/orders/fee";
-        $productionUrlPk   = "https://pandago-api-apso.deliveryhero.io/pk/api/v1/orders/fee";
+        $sandboxUrl        = "https://pandago-api-sandbox.deliveryhero.io/{$country}/api/v1/orders/time";
+        $productionUrlApac = "https://pandago-api-apse.deliveryhero.io/{$country}/api/v1/orders/time";
+        $productionUrlPk   = "https://pandago-api-apso.deliveryhero.io/pk/api/v1/orders/time";
 
         // Determine the actual URL to use
         $fullUrl = $sandboxUrl;
@@ -124,7 +123,7 @@ class OrderFeeEstimationTest extends TestCase
             $fullUrl = ('pk' === $country) ? $productionUrlPk : $productionUrlApac;
         }
 
-        echo "\nSTEP 2: Call the fee estimation endpoint\n";
+        echo "\nSTEP 2: Call the time estimation endpoint\n";
         echo "-------------------------------------\n";
         echo "• Full URL: " . $fullUrl . "\n";
         echo "• HTTP Method: POST\n";
@@ -132,13 +131,13 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Country: " . $country . "\n";
 
         // For reference, also show the URL constructed from the Config object
-        $configUrl = $this->config->getApiBaseUrl() . '/orders/fee';
+        $configUrl = $this->config->getApiBaseUrl() . '/orders/time';
         echo "• URL from Config: " . $configUrl . "\n";
 
         try {
-            // Request fee estimation
+            // Request time estimation
             $start  = microtime(true);
-            $result = $this->client->orders()->estimateFee($request);
+            $result = $this->client->orders()->estimateTime($request);
             $end    = microtime(true);
 
             echo "✓ Request completed in " . round(($end - $start) * 1000, 2) . " ms\n";
@@ -149,21 +148,42 @@ class OrderFeeEstimationTest extends TestCase
             echo "• Response JSON:\n";
             echo json_encode($result, JSON_PRETTY_PRINT) . "\n";
 
-            echo "\nSTEP 4: Verify the response contains delivery fee estimate\n";
+            echo "\nSTEP 4: Verify the response contains delivery time estimates\n";
             echo "-----------------------------------------------------\n";
 
             // Verify the response structure
             $this->assertIsArray($result);
             echo "✓ Response is a valid array\n";
 
-            // Response should contain estimated_delivery_fee
-            $this->assertArrayHasKey('estimated_delivery_fee', $result);
-            echo "✓ Response contains 'estimated_delivery_fee' field\n";
+            // Response should contain estimated_pickup_time
+            $this->assertArrayHasKey('estimated_pickup_time', $result);
+            echo "✓ Response contains 'estimated_pickup_time' field\n";
 
-            // Fee should be a positive number
-            $this->assertIsNumeric($result['estimated_delivery_fee']);
-            $this->assertGreaterThan(0, $result['estimated_delivery_fee']);
-            echo "✓ Estimated delivery fee is a positive number: " . $result['estimated_delivery_fee'] . "\n";
+            // Response should contain estimated_delivery_time
+            $this->assertArrayHasKey('estimated_delivery_time', $result);
+            echo "✓ Response contains 'estimated_delivery_time' field\n";
+
+            // Validate the time format (ISO 8601)
+            $this->assertMatchesRegularExpression(
+                '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/',
+                $result['estimated_pickup_time']
+            );
+            echo "✓ Pickup time is in ISO 8601 format: " . $result['estimated_pickup_time'] . "\n";
+
+            $this->assertMatchesRegularExpression(
+                '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/',
+                $result['estimated_delivery_time']
+            );
+            echo "✓ Delivery time is in ISO 8601 format: " . $result['estimated_delivery_time'] . "\n";
+
+            // Parse times to check if delivery is after pickup
+            $pickupTime   = strtotime($result['estimated_pickup_time']);
+            $deliveryTime = strtotime($result['estimated_delivery_time']);
+            $this->assertGreaterThan($pickupTime, $deliveryTime, 'Delivery time should be after pickup time');
+
+            $timeDifference = $deliveryTime - $pickupTime;
+            echo "✓ Delivery time is after pickup time by " . $timeDifference . " seconds (" .
+            round($timeDifference / 60, 1) . " minutes)\n";
 
             // Check if client order ID is included in response
             if (isset($result['client_order_id'])) {
@@ -175,7 +195,7 @@ class OrderFeeEstimationTest extends TestCase
 
             // Output any additional fields returned
             foreach ($result as $key => $value) {
-                if ('estimated_delivery_fee' !== $key && 'client_order_id' !== $key) {
+                if ('estimated_pickup_time' !== $key && 'estimated_delivery_time' !== $key && 'client_order_id' !== $key) {
                     echo "• Additional field in response: $key: " . (is_scalar($value) ? $value : json_encode($value)) . "\n";
                 }
             }
@@ -188,18 +208,19 @@ class OrderFeeEstimationTest extends TestCase
                 $recipient->getLocation()->getLongitude()
             );
             echo "• Calculated distance between sender and recipient: " . round($distance, 2) . " km\n";
-            echo "• Estimated cost per km: " . round($result['estimated_delivery_fee'] / $distance, 2) . "\n";
 
-            echo "\nSUMMARY: Successfully estimated delivery fee\n";
+            echo "\nSUMMARY: Successfully estimated delivery time\n";
             echo "==========================================\n";
             echo "• API Endpoint: " . $fullUrl . "\n";
             echo "• Sender location: " . $sender->getLocation()->getAddress() . "\n";
             echo "• Recipient location: " . $recipient->getLocation()->getAddress() . "\n";
             echo "• Distance: " . round($distance, 2) . " km\n";
-            echo "• Estimated delivery fee: " . $result['estimated_delivery_fee'] . "\n";
+            echo "• Estimated pickup time: " . $result['estimated_pickup_time'] . "\n";
+            echo "• Estimated delivery time: " . $result['estimated_delivery_time'] . "\n";
+            echo "• Estimated delivery duration: " . round($timeDifference / 60, 1) . " minutes\n";
 
         } catch (RequestException $e) {
-            // For common errors with fee estimation, provide more contextual information
+            // For common errors with time estimation, provide more contextual information
             if ($e->getCode() === 422 && strpos($e->getMessage(), 'No Branch found') !== false) {
                 echo "⚠️ Test skipped: No branch found close enough to the sender coordinates\n";
                 echo "• API Endpoint: " . $fullUrl . "\n";
@@ -227,32 +248,32 @@ class OrderFeeEstimationTest extends TestCase
     }
 
     /**
-     * Test Case 3.1.2: Get delivery fee estimate with address outside delivery area (Unhappy Path)
+     * Test Case 4.1.2: Get delivery estimate time with address outside delivery area (Unhappy Path)
      *
-     * Use recipient's address that is out of the agreed outlet delivery area.
+     * Use recipient's address that is outside the agreed outlet delivery area.
      * For Brands with Outlet configuration only.
      *
      * Steps:
-     * 1. Same steps as 3.1.1
+     * 1. Same steps as 4.1.1
      * 2. For body change the recipient's longitude and latitude out of delivery area
-     * 3. Response expected: Error indicating address is outside deliverable range (422 or 403)
+     * 3. Response expected: 422 Unprocessable Entity with message "Unable to process order\norder is outside deliverable range"
      *
      * @return void
      */
-    public function testEstimateDeliveryFeeOutsideArea()
+    public function testEstimateDeliveryTimeOutsideArea()
     {
-        echo "\n\n✅ TEST CASE 3.1.2: Get delivery fee estimate with address outside delivery area (Unhappy Path)\n";
+        echo "\n\n✅ TEST CASE 4.1.2: Get delivery estimate time with address outside delivery area (Unhappy Path)\n";
         echo "==========================================================================================\n\n";
         echo "STEP 1: Prepare order request with sender and out-of-range recipient information\n";
         echo "------------------------------------------------------------------------\n";
 
-                                         // Define out-of-range coordinates - way outside normal delivery range in Singapore
-        $outOfRangeLatitude  = 1.4302;   // Far outside delivery area - North Singapore
-        $outOfRangeLongitude = 104.0500; // Far outside delivery area - East towards Johor
+                                                   // Define out-of-range coordinates as specified in the test case
+        $outOfRangeLatitude  = 1.8741652727127075; // Out of delivery area latitude
+        $outOfRangeLongitude = 113.8461685180664;  // Out of delivery area longitude
 
         // Create recipient with out-of-range location
         $location = new Location(
-            'Out of Range Address, Singapore',
+            'Out of Range Address',
             $outOfRangeLatitude,
             $outOfRangeLongitude
         );
@@ -282,7 +303,7 @@ class OrderFeeEstimationTest extends TestCase
             $senderLocation
         );
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender information added with valid location at coordinates: 1.2923742, 103.8486029\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -294,9 +315,9 @@ class OrderFeeEstimationTest extends TestCase
         $country     = $this->config->getCountry();
 
         // URLs as specified in the documentation
-        $sandboxUrl        = "https://pandago-api-sandbox.deliveryhero.io/{$country}/api/v1/orders/fee";
-        $productionUrlApac = "https://pandago-api-apse.deliveryhero.io/{$country}/api/v1/orders/fee";
-        $productionUrlPk   = "https://pandago-api-apso.deliveryhero.io/pk/api/v1/orders/fee";
+        $sandboxUrl        = "https://pandago-api-sandbox.deliveryhero.io/{$country}/api/v1/orders/time";
+        $productionUrlApac = "https://pandago-api-apse.deliveryhero.io/{$country}/api/v1/orders/time";
+        $productionUrlPk   = "https://pandago-api-apso.deliveryhero.io/pk/api/v1/orders/time";
 
         // Determine the actual URL to use
         $fullUrl = $sandboxUrl;
@@ -304,7 +325,7 @@ class OrderFeeEstimationTest extends TestCase
             $fullUrl = ('pk' === $country) ? $productionUrlPk : $productionUrlApac;
         }
 
-        echo "\nSTEP 2: Call the fee estimation endpoint with out-of-range address\n";
+        echo "\nSTEP 2: Call the time estimation endpoint with out-of-range address\n";
         echo "---------------------------------------------------------------\n";
         echo "• Full URL: " . $fullUrl . "\n";
         echo "• HTTP Method: POST\n";
@@ -313,9 +334,9 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Sending request with out-of-range coordinates\n";
 
         try {
-            // Request fee estimation
+            // Request time estimation
             $start  = microtime(true);
-            $result = $this->client->orders()->estimateFee($request);
+            $result = $this->client->orders()->estimateTime($request);
             $end    = microtime(true);
 
             // If we get here without an exception, the test has failed
@@ -329,14 +350,22 @@ class OrderFeeEstimationTest extends TestCase
             echo "\nSTEP 3: Verify the error response indicates address is outside delivery area\n";
             echo "----------------------------------------------------------------------\n";
 
-            // Verify the status code is either 422 Unprocessable Entity or 403 Forbidden
-            // Both could be valid responses for out-of-range addresses depending on API implementation
-            $this->assertContains(
+            // Verify the status code is 422 Unprocessable Entity
+            $this->assertEquals(
+                422,
                 $e->getCode(),
-                [422, 403],
-                'Expected HTTP 422 Unprocessable Entity or 403 Forbidden status code'
+                'Expected HTTP 422 Unprocessable Entity status code'
             );
-            echo "✓ Response status: " . $e->getCode() . " - Acceptable error code for out-of-range address\n";
+            echo "✓ Response status: 422 Unprocessable Entity - Correct error code for out-of-range address\n";
+
+            // Verify the error message contains the expected text
+            $expectedErrorMessage = "Unable to process order\norder is outside deliverable range";
+            $this->assertStringContainsString(
+                'outside deliverable range',
+                $e->getMessage(),
+                'Error message should indicate the order is outside deliverable range'
+            );
+            echo "✓ Error message correctly indicates the order is outside deliverable range\n";
 
             // Print details about the error for debugging
             echo "• Complete error message: " . $e->getMessage() . "\n";
@@ -349,7 +378,182 @@ class OrderFeeEstimationTest extends TestCase
             echo "=========================================================\n";
             echo "• API Endpoint: " . $fullUrl . "\n";
             echo "• Correctly received error status code: " . $e->getCode() . "\n";
-            echo "• API properly rejected the request as expected\n";
+            echo "• API properly rejected the request with 'outside deliverable range' error\n";
+            echo "• NOTE: This test confirms that for brands with outlet configuration,\n";
+            echo "  addresses outside the delivery area are properly rejected.\n";
+        }
+    }
+
+    /**
+     * Test Case 4.1.3: Get delivery estimate time without sender (Unhappy Path)
+     *
+     * Sends order details JSON to estimate the delivery time but excludes the sender attribute.
+     * For brands without outlet configuration, this will still generate an estimate but it may be
+     * inaccurate as the system will use the vendor's default location.
+     *
+     * Steps:
+     * 1. [POST] Request to /orders/time endpoint
+     * 2. Use authorization token
+     * 3. Exclude sender attribute in the request body
+     * 4. Expect 200 OK response
+     * 5. Note that estimates may be inaccurate due to missing sender information
+     *
+     * @return void
+     */
+    public function testEstimateDeliveryTimeWithoutSender()
+    {
+        echo "\n\n✅ TEST CASE 4.1.3: Get delivery estimate time without sender (Unhappy Path)\n";
+        echo "===========================================================================\n\n";
+        echo "STEP 1: Prepare order request with recipient information but without sender\n";
+        echo "----------------------------------------------------------------------\n";
+
+        // Create recipient with location in Singapore
+        $recipientLocation = new Location(
+            '20 Esplanade Drive', // Address
+            1.2857488,            // Latitude - Singapore
+            103.8548608           // Longitude - Singapore
+        );
+        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
+        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+
+        // Create order request with a client order ID for tracing
+        $clientOrderId = 'test-time-no-sender-' . uniqid();
+        $request       = new CreateOrderRequest(
+            $recipient,
+            23.50,             // Amount
+            'Refreshing drink' // Description
+        );
+        $request->setClientOrderId($clientOrderId);
+        echo "• Order request created with amount: 23.50\n";
+        echo "• Client order ID: " . $clientOrderId . "\n";
+        echo "• NOTE: Sender information is intentionally NOT provided for this test case\n";
+
+        // Display the request payload
+        $requestPayload = $request->toArray();
+        echo "\n• Request Payload (JSON):\n";
+        echo json_encode($requestPayload, JSON_PRETTY_PRINT) . "\n";
+
+        // Define and display the full URL based on environment
+        $environment = $this->config->getEnvironment();
+        $country     = $this->config->getCountry();
+
+        // URLs as specified in the documentation
+        $sandboxUrl        = "https://pandago-api-sandbox.deliveryhero.io/{$country}/api/v1/orders/time";
+        $productionUrlApac = "https://pandago-api-apse.deliveryhero.io/{$country}/api/v1/orders/time";
+        $productionUrlPk   = "https://pandago-api-apso.deliveryhero.io/pk/api/v1/orders/time";
+
+        // Determine the actual URL to use
+        $fullUrl = $sandboxUrl;
+        if ('production' === $environment) {
+            $fullUrl = ('pk' === $country) ? $productionUrlPk : $productionUrlApac;
+        }
+
+        echo "\nSTEP 2: Call the time estimation endpoint without sender information\n";
+        echo "----------------------------------------------------------------\n";
+        echo "• Full URL: " . $fullUrl . "\n";
+        echo "• HTTP Method: POST\n";
+        echo "• Environment: " . $environment . "\n";
+        echo "• Country: " . $country . "\n";
+
+        try {
+            // Request time estimation without sender
+            $start  = microtime(true);
+            $result = $this->client->orders()->estimateTime($request);
+            $end    = microtime(true);
+
+            echo "✓ Request completed in " . round(($end - $start) * 1000, 2) . " ms\n";
+            echo "✓ Response status: 200 OK\n";
+
+            echo "\nSTEP 3: Examine the response\n";
+            echo "--------------------------\n";
+            echo "• Response JSON:\n";
+            echo json_encode($result, JSON_PRETTY_PRINT) . "\n";
+
+            echo "\nSTEP 4: Verify response contains time estimates (potentially inaccurate)\n";
+            echo "-------------------------------------------------------------------\n";
+
+            // Verify the response structure
+            $this->assertIsArray($result);
+            echo "✓ Response is a valid array\n";
+
+            // Response should contain estimated_pickup_time
+            $this->assertArrayHasKey('estimated_pickup_time', $result);
+            echo "✓ Response contains 'estimated_pickup_time' field\n";
+
+            // Response should contain estimated_delivery_time
+            $this->assertArrayHasKey('estimated_delivery_time', $result);
+            echo "✓ Response contains 'estimated_delivery_time' field\n";
+
+            // Validate the time format (ISO 8601)
+            $this->assertMatchesRegularExpression(
+                '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/',
+                $result['estimated_pickup_time']
+            );
+            echo "✓ Pickup time is in ISO 8601 format: " . $result['estimated_pickup_time'] . "\n";
+
+            $this->assertMatchesRegularExpression(
+                '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/',
+                $result['estimated_delivery_time']
+            );
+            echo "✓ Delivery time is in ISO 8601 format: " . $result['estimated_delivery_time'] . "\n";
+
+            // Parse times to check if delivery is after pickup
+            $pickupTime   = strtotime($result['estimated_pickup_time']);
+            $deliveryTime = strtotime($result['estimated_delivery_time']);
+            $this->assertGreaterThan($pickupTime, $deliveryTime, 'Delivery time should be after pickup time');
+
+            $timeDifference = $deliveryTime - $pickupTime;
+            echo "✓ Delivery time is after pickup time by " . $timeDifference . " seconds (" .
+            round($timeDifference / 60, 1) . " minutes)\n";
+
+            // Check if client order ID is included in response
+            if (isset($result['client_order_id'])) {
+                echo "✓ Response includes client_order_id: " . $result['client_order_id'] . "\n";
+                // Verify it matches what we sent
+                $this->assertEquals($clientOrderId, $result['client_order_id']);
+                echo "✓ Returned client_order_id matches our request\n";
+            }
+
+            echo "\nSTEP 5: Document potential inaccuracy due to missing sender attribute\n";
+            echo "-------------------------------------------------------------------\n";
+            echo "⚠️ NOTE: For brands without outlet configuration, the time estimates may be inaccurate\n";
+            echo "⚠️ because the system is using the vendor's default location instead of a specific sender location.\n";
+            echo "⚠️ This is expected behavior for this unhappy path test case.\n";
+
+            echo "\nSUMMARY: Successfully received time estimates (but potentially inaccurate)\n";
+            echo "===================================================================\n";
+            echo "• API Endpoint: " . $fullUrl . "\n";
+            echo "• Sender information: NOT PROVIDED (Using vendor's default location)\n";
+            echo "• Recipient location: " . $recipient->getLocation()->getAddress() . "\n";
+            echo "• Estimated pickup time: " . $result['estimated_pickup_time'] . "\n";
+            echo "• Estimated delivery time: " . $result['estimated_delivery_time'] . "\n";
+            echo "• Estimated delivery duration: " . round($timeDifference / 60, 1) . " minutes\n";
+            echo "• IMPORTANT: These estimates may be inaccurate due to missing sender information\n";
+
+        } catch (RequestException $e) {
+            if ($e->getCode() === 422 && strpos($e->getMessage(), 'sender is required') !== false) {
+                echo "ℹ️ Test result: The API requires sender information and rejected the request\n";
+                echo "• This is an acceptable outcome for brands WITH outlet configuration\n";
+                echo "• For brands WITHOUT outlet configuration, the API should accept the request but provide potentially inaccurate estimates\n";
+                echo "• API Endpoint: " . $fullUrl . "\n";
+                echo "• Error message: " . $e->getMessage() . "\n";
+                $this->markTestSkipped('API requires sender information for this configuration');
+            } elseif ($e->getCode() === 422 && strpos($e->getMessage(), 'No Branch found') !== false) {
+                echo "⚠️ Test skipped: No branch found close enough to use as default sender\n";
+                echo "• API Endpoint: " . $fullUrl . "\n";
+                echo "• Error message: " . $e->getMessage() . "\n";
+                $this->markTestSkipped('No branch found to use as default sender');
+            } else {
+                echo "❌ Test failed with error:\n";
+                echo "• API Endpoint: " . $fullUrl . "\n";
+                echo "• Status code: " . $e->getCode() . "\n";
+                echo "• Error message: " . $e->getMessage() . "\n";
+                echo "• Request payload: " . json_encode($requestPayload, JSON_PRETTY_PRINT) . "\n";
+                if ($e->getData()) {
+                    echo "• Response data: " . json_encode($e->getData(), JSON_PRETTY_PRINT) . "\n";
+                }
+                throw $e;
+            }
         }
     }
 
@@ -377,152 +581,5 @@ class OrderFeeEstimationTest extends TestCase
         $distance = $earthRadius * $c;
 
         return $distance;
-    }
-
-    /**
-     * Test Case 3.1.3: Get delivery fee estimate without sender attribute (Unhappy Path)
-     *
-     * For Brands without Outlet configuration, excluding the sender attribute will
-     * still generate an estimate, but the system will identify the sender location as
-     * coming from the location vendor provided initially to create the Client Id.
-     * This results in inaccurate estimation for the order.
-     *
-     * Steps:
-     * 1. Same steps as 3.1.1 but remove sender attribute
-     * 2. Expect 200 OK response, but estimates will be inaccurate
-     *
-     * @return void
-     */
-    public function testEstimateDeliveryFeeWithoutSender()
-    {
-        echo "\n\n✅ TEST CASE 3.1.3: Get delivery fee estimate without sender attribute (Unhappy Path)\n";
-        echo "=====================================================================================\n\n";
-        echo "STEP 1: Prepare order request WITHOUT sender information\n";
-        echo "---------------------------------------------------------\n";
-
-        // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
-
-        // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-fee-no-sender-' . uniqid();
-        $request       = new CreateOrderRequest(
-            $recipient,
-            23.50,             // Amount
-            'Refreshing drink' // Description
-        );
-        $request->setClientOrderId($clientOrderId);
-        echo "• Order request created with amount: 23.50\n";
-        echo "• Client order ID: " . $clientOrderId . "\n";
-        echo "• NOTE: Deliberately NOT setting sender information for this test\n";
-
-        // Display the request payload
-        $requestPayload = $request->toArray();
-        echo "\n• Request Payload (JSON):\n";
-        echo json_encode($requestPayload, JSON_PRETTY_PRINT) . "\n";
-
-        // Define and display the full URL based on environment
-        $environment = $this->config->getEnvironment();
-        $country     = $this->config->getCountry();
-
-        // URLs as specified in the documentation
-        $sandboxUrl        = "https://pandago-api-sandbox.deliveryhero.io/{$country}/api/v1/orders/fee";
-        $productionUrlApac = "https://pandago-api-apse.deliveryhero.io/{$country}/api/v1/orders/fee";
-        $productionUrlPk   = "https://pandago-api-apso.deliveryhero.io/pk/api/v1/orders/fee";
-
-        // Determine the actual URL to use
-        $fullUrl = $sandboxUrl;
-        if ('production' === $environment) {
-            $fullUrl = ('pk' === $country) ? $productionUrlPk : $productionUrlApac;
-        }
-
-        echo "\nSTEP 2: Call the fee estimation endpoint without sender attribute\n";
-        echo "----------------------------------------------------------------\n";
-        echo "• Full URL: " . $fullUrl . "\n";
-        echo "• HTTP Method: POST\n";
-        echo "• Environment: " . $environment . "\n";
-        echo "• Country: " . $country . "\n";
-
-        // For reference, also show the URL constructed from the Config object
-        $configUrl = $this->config->getApiBaseUrl() . '/orders/fee';
-        echo "• URL from Config: " . $configUrl . "\n";
-
-        try {
-            // Request fee estimation
-            $start  = microtime(true);
-            $result = $this->client->orders()->estimateFee($request);
-            $end    = microtime(true);
-
-            echo "✓ Request completed in " . round(($end - $start) * 1000, 2) . " ms\n";
-            echo "✓ Response status: 200 OK\n";
-
-            echo "\nSTEP 3: Examine the response\n";
-            echo "--------------------------\n";
-            echo "• Response JSON:\n";
-            echo json_encode($result, JSON_PRETTY_PRINT) . "\n";
-
-            echo "\nSTEP 4: Verify the response contains delivery fee estimate (potentially inaccurate)\n";
-            echo "----------------------------------------------------------------------------\n";
-
-            // Verify the response structure
-            $this->assertIsArray($result);
-            echo "✓ Response is a valid array\n";
-
-            // Response should contain estimated_delivery_fee
-            $this->assertArrayHasKey('estimated_delivery_fee', $result);
-            echo "✓ Response contains 'estimated_delivery_fee' field\n";
-
-            // Fee should be a positive number
-            $this->assertIsNumeric($result['estimated_delivery_fee']);
-            $this->assertGreaterThan(0, $result['estimated_delivery_fee']);
-            echo "✓ Estimated delivery fee is a positive number: " . $result['estimated_delivery_fee'] . "\n";
-
-            // Check if client order ID is included in response
-            if (isset($result['client_order_id'])) {
-                echo "✓ Response includes client_order_id: " . $result['client_order_id'] . "\n";
-                // Verify it matches what we sent
-                $this->assertEquals($clientOrderId, $result['client_order_id']);
-                echo "✓ Returned client_order_id matches our request\n";
-            }
-
-            echo "\nSUMMARY: Successfully received delivery fee estimate (potentially inaccurate)\n";
-            echo "====================================================================\n";
-            echo "• API Endpoint: " . $fullUrl . "\n";
-            echo "• Sender location: NOT PROVIDED (using vendor default location)\n";
-            echo "• Recipient location: " . $recipient->getLocation()->getAddress() . "\n";
-            echo "• Estimated delivery fee: " . $result['estimated_delivery_fee'] . "\n";
-            echo "• NOTE: This estimate is potentially inaccurate because it uses the vendor's default\n";
-            echo "  location instead of a specific sender location. For brands without outlet\n";
-            echo "  configuration, always include the sender attribute for accurate estimates.\n";
-
-        } catch (RequestException $e) {
-            // For brands WITH outlet configuration, this might throw an error
-            if ($e->getCode() === 422 && (
-                strpos($e->getMessage(), 'sender location is required') !== false ||
-                strpos($e->getMessage(), 'Sender location is required') !== false
-            )) {
-                echo "⚠️ This API appears to require sender information (configured with outlets):\n";
-                echo "• API Endpoint: " . $fullUrl . "\n";
-                echo "• Error message: " . $e->getMessage() . "\n";
-                echo "• This indicates the account is configured with outlets and requires sender location\n";
-                echo "• For brands WITH outlet configuration, sender attribute is mandatory\n";
-                $this->markTestSkipped('API requires sender location (outlet configuration detected)');
-            } else {
-                echo "❌ Test failed with unexpected error:\n";
-                echo "• API Endpoint: " . $fullUrl . "\n";
-                echo "• Status code: " . $e->getCode() . "\n";
-                echo "• Error message: " . $e->getMessage() . "\n";
-                echo "• Request payload: " . json_encode($requestPayload, JSON_PRETTY_PRINT) . "\n";
-                if ($e->getData()) {
-                    echo "• Response data: " . json_encode($e->getData(), JSON_PRETTY_PRINT) . "\n";
-                }
-                throw $e;
-            }
-        }
     }
 }
