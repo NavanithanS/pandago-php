@@ -89,6 +89,43 @@ class OutletIntegrationTest extends TestCase
     {
         echo "\n\n✅ TEST CASE 9.1.1: Create New Outlet (Happy Path)\n";
         echo "==============================================\n\n";
+
+        echo "AUTHENTICATION CHECK\n";
+        echo "-----------------\n";
+        try {
+            // Get token and print authentication results
+            // We're using reflection to access private methods/properties
+            $reflectionClient = new \ReflectionClass($this->client);
+
+            // First, get the token manager from the client
+            $tokenManagerProp = $reflectionClient->getProperty('tokenManager');
+            $tokenManagerProp->setAccessible(true);
+            $tokenManager = $tokenManagerProp->getValue($this->client);
+
+            // Now get the token from the token manager
+            $reflectionTokenManager = new \ReflectionClass($tokenManager);
+
+            echo "• Using client ID: " . $this->config->getClientId() . "\n";
+            echo "• Using key ID: " . $this->config->getKeyId() . "\n";
+            echo "• Using scope: " . $this->config->getScope() . "\n";
+
+            // Get and display token (safely)
+            $startAuth = microtime(true);
+            $token     = $tokenManager->getToken();
+            $endAuth   = microtime(true);
+
+            // Only display a small portion of the token for security
+            $accessToken = $token->getAccessToken();
+            $maskedToken = substr($accessToken, 0, 10) . '...' . substr($accessToken, -5);
+
+            echo "✓ Authentication successful in " . round(($endAuth - $startAuth) * 1000, 2) . " ms\n";
+            echo "• Access token: " . $maskedToken . "\n";
+            echo "• Token expires at: " . date('Y-m-d H:i:s', $token->getExpiresAt()) . "\n";
+            echo "• Token is " . ($token->isExpired() ? "expired" : "valid") . "\n\n";
+        } catch (\Exception $e) {
+            echo "❌ Authentication error: " . $e->getMessage() . "\n\n";
+        }
+
         echo "STEP 1: Prepare outlet creation request\n";
         echo "-------------------------------------\n";
 

@@ -2,8 +2,7 @@
 namespace Nava\Pandago\Resources;
 
 use Nava\Pandago\Contracts\ClientInterface;
-use Nava\Pandago\Exceptions\PandagoException;
-use Nava\Pandago\Exceptions\RequestException;
+use Nava\Pandago\Models\Outlet\CreateOutletRequest;
 use Nava\Pandago\Models\Outlet\Outlet;
 
 class OutletResource
@@ -14,7 +13,7 @@ class OutletResource
     protected $client;
 
     /**
-     * OutletResource constructor.
+     * Constructor.
      *
      * @param ClientInterface $client
      */
@@ -24,14 +23,38 @@ class OutletResource
     }
 
     /**
-     * Get an outlet by client vendor ID.
+     * Create or update an outlet.
      *
-     * @param string $clientVendorId
+     * @param string $clientVendorId Client vendor ID
+     * @param CreateOutletRequest|Outlet $outlet Outlet data
      * @return Outlet
-     * @throws PandagoException
-     * @throws RequestException
      */
-    public function get(string $clientVendorId): Outlet
+    public function createOrUpdate(string $clientVendorId, $outlet)
+    {
+        // Check the type of $outlet and handle accordingly
+        if (! ($outlet instanceof Outlet) && ! ($outlet instanceof CreateOutletRequest)) {
+            throw new \InvalidArgumentException(
+                'Outlet parameter must be an instance of Outlet or CreateOutletRequest'
+            );
+        }
+
+        // Convert to array for the request
+        $data = $outlet->toArray();
+
+        $response = $this->client->request('PUT', "/outlets/{$clientVendorId}", [
+            'json' => $data,
+        ]);
+
+        return Outlet::fromArray($response);
+    }
+
+    /**
+     * Get an outlet.
+     *
+     * @param string $clientVendorId Client vendor ID
+     * @return Outlet
+     */
+    public function get(string $clientVendorId)
     {
         $response = $this->client->request('GET', "/outlets/{$clientVendorId}");
 
@@ -39,37 +62,17 @@ class OutletResource
     }
 
     /**
-     * Create or update an outlet.
-     *
-     * @param string $clientVendorId
-     * @param Outlet $outlet
-     * @return Outlet
-     * @throws PandagoException
-     * @throws RequestException
-     */
-    public function createOrUpdate(string $clientVendorId, Outlet $outlet): Outlet
-    {
-        $response = $this->client->request('PUT', "/outlets/{$clientVendorId}", [
-            'json' => $outlet->toArray(),
-        ]);
-
-        return Outlet::fromArray($response);
-    }
-
-    /**
-     * Get all outlets for a brand vendor.
+     * Get all outlets.
      *
      * @return array
-     * @throws PandagoException
-     * @throws RequestException
      */
-    public function all(): array
+    public function getAll()
     {
         $response = $this->client->request('GET', '/outletList');
 
         $outlets = [];
-        foreach ($response as $outlet) {
-            $outlets[] = Outlet::fromArray($outlet);
+        foreach ($response as $outletData) {
+            $outlets[] = Outlet::fromArray($outletData);
         }
 
         return $outlets;
