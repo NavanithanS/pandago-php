@@ -1,4 +1,5 @@
 <?php
+
 namespace Nava\Pandago\Resources;
 
 use Nava\Pandago\Contracts\ClientInterface;
@@ -41,7 +42,7 @@ class OutletResource
         // Convert to array for the request
         $data = $outlet->toArray();
 
-        $response = $this->client->request('PUT', "/outlets/{$clientVendorId}", [
+        $response = $this->client->request('PUT', "https://pandago-api-sandbox.deliveryhero.io/sg/api/v1/outlets/{$clientVendorId}", [
             'json' => $data,
         ]);
 

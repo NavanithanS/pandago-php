@@ -1,4 +1,5 @@
 <?php
+
 namespace Nava\Pandago\Auth;
 
 use Firebase\JWT\JWT;
@@ -79,7 +80,6 @@ class TokenManager
     protected function requestToken(): Token
     {
         $assertion = $this->generateAssertion();
-
         $response = $this->httpClient->request('POST', $this->config->getAuthUrl(), [
             'headers'     => [
                 'Content-Type' => 'application/x-www-form-urlencoded',
@@ -147,7 +147,7 @@ class TokenManager
         }
 
         // Some libraries require proper line endings
-        $privateKey = str_replace(["\r\n", "\n", "\r"], PHP_EOL, $privateKey);
+        // $privateKey = str_replace(["\r\n", "\n", "\r"], PHP_EOL, $privateKey);
 
         try {
             return JWT::encode($payload, $privateKey, 'RS256', null, [
@@ -165,8 +165,10 @@ class TokenManager
      */
     protected function getAudience(): string
     {
-        return $this->config->getEnvironment() === 'sandbox'
-        ? 'https://sts-st.deliveryhero.io'
-        : 'https://sts.deliveryhero.io';
+        // return $this->config->getEnvironment() === 'sandbox'
+        //     ? 'https://sts-st.deliveryhero.io'
+        //     : 'https://sts.deliveryhero.io';
+
+        return 'https://sts.deliveryhero.io';
     }
 }

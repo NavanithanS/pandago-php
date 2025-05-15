@@ -137,8 +137,8 @@ class OutletIntegrationTest extends TestCase
         $request = new CreateOutletRequest(
             'Pandago Test Outlet',                // name
             '1 Raffles Place, Singapore 048616',  // address
-            1.2842,                               // latitude
-            103.8511,                             // longitude
+            1.2923742,                               // latitude
+            103.8486029,                             // longitude
             'Singapore',                          // city
             '+6588888888',                        // phone_number
             'SGD',                                // currency

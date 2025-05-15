@@ -37,7 +37,7 @@ class OrderResource
      */
     public function create(CreateOrderRequest $request): Order
     {
-        $response = $this->client->request('POST', '/orders', [
+        $response = $this->client->request('POST', 'https://pandago-api-sandbox.deliveryhero.io/sg/api/v1/orders', [
             'json' => $request->toArray(),
         ]);
 
