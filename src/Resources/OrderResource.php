@@ -28,6 +28,18 @@ class OrderResource
     }
 
     /**
+     * Get the full API URL for a given path.
+     *
+     * @param string $path
+     * @return string
+     */
+    private function getFullUrl(string $path): string
+    {
+        $baseUrl = $this->client->getConfig()->getApiBaseUrl();
+        return rtrim($baseUrl, '/') . $path;
+    }
+
+    /**
      * Create a new order.
      *
      * @param CreateOrderRequest $request
@@ -37,7 +49,7 @@ class OrderResource
      */
     public function create(CreateOrderRequest $request): Order
     {
-        $response = $this->client->request('POST', 'https://pandago-api-sandbox.deliveryhero.io/sg/api/v1/orders', [
+        $response = $this->client->request('POST', $this->getFullUrl('/orders'), [
             'json' => $request->toArray(),
         ]);
 
@@ -54,7 +66,7 @@ class OrderResource
      */
     public function get(string $orderId): Order
     {
-        $response = $this->client->request('GET', "/orders/{$orderId}");
+        $response = $this->client->request('GET', $this->getFullUrl("/orders/{$orderId}"));
 
         return Order::fromArray($response);
     }
@@ -70,7 +82,7 @@ class OrderResource
      */
     public function update(string $orderId, UpdateOrderRequest $request): Order
     {
-        $response = $this->client->request('PUT', "/orders/{$orderId}", [
+        $response = $this->client->request('PUT', $this->getFullUrl("/orders/{$orderId}"), [
             'json' => $request->toArray(),
         ]);
 
@@ -88,7 +100,7 @@ class OrderResource
      */
     public function cancel(string $orderId, CancelOrderRequest $request): bool
     {
-        $this->client->request('DELETE', "/orders/{$orderId}", [
+        $this->client->request('DELETE', $this->getFullUrl("/orders/{$orderId}"), [
             'json' => $request->toArray(),
         ]);
 
@@ -105,7 +117,7 @@ class OrderResource
      */
     public function getCoordinates(string $orderId): OrderCoordinate
     {
-        $response = $this->client->request('GET', "/orders/{$orderId}/coordinates");
+        $response = $this->client->request('GET', $this->getFullUrl("/orders/{$orderId}/coordinates"));
 
         return OrderCoordinate::fromArray($response);
     }
@@ -120,7 +132,7 @@ class OrderResource
      */
     public function getProofOfDelivery(string $orderId): string
     {
-        $response = $this->client->request('GET', "/orders/proof_of_delivery/{$orderId}");
+        $response = $this->client->request('GET', $this->getFullUrl("/orders/proof_of_delivery/{$orderId}"));
 
         // Handle different response formats
         if (is_array($response)) {
@@ -146,7 +158,7 @@ class OrderResource
      */
     public function getProofOfPickup(string $orderId): string
     {
-        $response = $this->client->request('GET', "/orders/proof_of_pickup/{$orderId}");
+        $response = $this->client->request('GET', $this->getFullUrl("/orders/proof_of_pickup/{$orderId}"));
 
         // Handle different response formats
         if (is_array($response)) {
@@ -172,7 +184,7 @@ class OrderResource
      */
     public function getProofOfReturn(string $orderId): string
     {
-        $response = $this->client->request('GET', "/orders/proof_of_return/{$orderId}");
+        $response = $this->client->request('GET', $this->getFullUrl("/orders/proof_of_return/{$orderId}"));
 
         // Handle different response formats
         if (is_array($response)) {
@@ -198,7 +210,7 @@ class OrderResource
      */
     public function estimateFee(CreateOrderRequest $request): array
     {
-        return $this->client->request('POST', '/orders/fee', [
+        return $this->client->request('POST', $this->getFullUrl('/orders/fee'), [
             'json' => $request->toArray(),
         ]);
     }
@@ -213,7 +225,7 @@ class OrderResource
      */
     public function estimateTime(CreateOrderRequest $request): array
     {
-        return $this->client->request('POST', '/orders/time', [
+        return $this->client->request('POST', $this->getFullUrl('/orders/time'), [
             'json' => $request->toArray(),
         ]);
     }

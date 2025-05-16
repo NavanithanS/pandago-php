@@ -1,5 +1,4 @@
 <?php
-
 namespace Nava\Pandago\Resources;
 
 use Nava\Pandago\Contracts\ClientInterface;
@@ -24,6 +23,18 @@ class OutletResource
     }
 
     /**
+     * Get the full API URL for a given path.
+     *
+     * @param string $path
+     * @return string
+     */
+    private function getFullUrl(string $path): string
+    {
+        $baseUrl = $this->client->getConfig()->getApiBaseUrl();
+        return rtrim($baseUrl, '/') . $path;
+    }
+
+    /**
      * Create or update an outlet.
      *
      * @param string $clientVendorId Client vendor ID
@@ -42,7 +53,7 @@ class OutletResource
         // Convert to array for the request
         $data = $outlet->toArray();
 
-        $response = $this->client->request('PUT', "https://pandago-api-sandbox.deliveryhero.io/sg/api/v1/outlets/{$clientVendorId}", [
+        $response = $this->client->request('PUT', $this->getFullUrl("/outlets/{$clientVendorId}"), [
             'json' => $data,
         ]);
 
@@ -57,7 +68,7 @@ class OutletResource
      */
     public function get(string $clientVendorId)
     {
-        $response = $this->client->request('GET', "/outlets/{$clientVendorId}");
+        $response = $this->client->request('GET', $this->getFullUrl("/outlets/{$clientVendorId}"));
 
         return Outlet::fromArray($response);
     }
@@ -69,7 +80,7 @@ class OutletResource
      */
     public function getAll()
     {
-        $response = $this->client->request('GET', '/outletList');
+        $response = $this->client->request('GET', $this->getFullUrl('/outletList'));
 
         $outlets = [];
         foreach ($response as $outletData) {
