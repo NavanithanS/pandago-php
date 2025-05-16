@@ -4,7 +4,6 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
@@ -69,12 +68,13 @@ class OrderFeeEstimationTest extends TestCase
         echo "STEP 1: Prepare order request with sender and recipient information\n";
         echo "----------------------------------------------------------------\n";
 
-        // Create recipient with location in Singapore
+        // Create recipient using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
-        echo "• Recipient created with location at coordinates: 1.303166607308108, 103.83618242858377\n";
+        echo "• Recipient created with location at coordinates: " .
+        TestAddresses::CUSTOMER_LATITUDE . ", " . TestAddresses::CUSTOMER_LONGITUDE . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-fee-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('fee');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,             // Amount
@@ -84,10 +84,11 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Order request created with amount: 23.50\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender information - this is required for fee estimation
+        // Set sender information using TestAddresses - this is required for fee estimation
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.3018914131301271, 103.83548392113393\n";
+        echo "• Sender information added with location at coordinates: " .
+        TestAddresses::OUTLET_LATITUDE . ", " . TestAddresses::OUTLET_LONGITUDE . "\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -165,22 +166,17 @@ class OrderFeeEstimationTest extends TestCase
                 }
             }
 
-            // Calculate distance between sender and recipient (in kilometers)
-            $distance = $this->calculateDistance(
-                $sender->getLocation()->getLatitude(),
-                $sender->getLocation()->getLongitude(),
-                $recipient->getLocation()->getLatitude(),
-                $recipient->getLocation()->getLongitude()
-            );
-            echo "• Calculated distance between sender and recipient: " . round($distance, 2) . " km\n";
+            // Calculate distance between sender and recipient using TestAddresses
+            $distance = TestAddresses::getApproximateDistance();
+            echo "• Distance between sender and recipient: " . $distance . " km\n";
             echo "• Estimated cost per km: " . round($result['estimated_delivery_fee'] / $distance, 2) . "\n";
 
             echo "\nSUMMARY: Successfully estimated delivery fee\n";
             echo "==========================================\n";
             echo "• API Endpoint: " . $fullUrl . "\n";
-            echo "• Sender location: " . $sender->getLocation()->getAddress() . "\n";
-            echo "• Recipient location: " . $recipient->getLocation()->getAddress() . "\n";
-            echo "• Distance: " . round($distance, 2) . " km\n";
+            echo "• Sender location: " . TestAddresses::OUTLET_ADDRESS . "\n";
+            echo "• Recipient location: " . TestAddresses::CUSTOMER_ADDRESS . "\n";
+            echo "• Distance: " . $distance . " km\n";
             echo "• Estimated delivery fee: " . $result['estimated_delivery_fee'] . "\n";
 
         } catch (RequestException $e) {
@@ -231,11 +227,13 @@ class OrderFeeEstimationTest extends TestCase
         echo "STEP 1: Prepare order request with sender and out-of-range recipient information\n";
         echo "------------------------------------------------------------------------\n";
 
+        // Use the out-of-range contact from TestAddresses
         $recipient = TestAddresses::getOutOfRangeContact();
-        echo "• Recipient created with out-of-range location at coordinates\n";
+        echo "• Recipient created with out-of-range location at coordinates: " .
+        TestAddresses::OUT_OF_RANGE_LATITUDE . ", " . TestAddresses::OUT_OF_RANGE_LONGITUDE . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-out-of-range-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('out-of-range');
         $request       = new CreateOrderRequest(
             $recipient,
             25.00,
@@ -245,10 +243,11 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Order request created with amount: 25.00\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender with a valid location in Singapore
+        // Set sender with a valid location using TestAddresses
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.3018914131301271, 103.83548392113393\n";
+        echo "• Sender information added with location at coordinates: " .
+        TestAddresses::OUTLET_LATITUDE . ", " . TestAddresses::OUTLET_LONGITUDE . "\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -320,32 +319,6 @@ class OrderFeeEstimationTest extends TestCase
     }
 
     /**
-     * Calculate the distance between two points using the Haversine formula.
-     *
-     * @param float $lat1 Latitude of point 1
-     * @param float $lon1 Longitude of point 1
-     * @param float $lat2 Latitude of point 2
-     * @param float $lon2 Longitude of point 2
-     * @return float Distance in kilometers
-     */
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-    {
-        $earthRadius = 6371; // Radius of the Earth in kilometers
-
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLon = deg2rad($lon2 - $lon1);
-
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-        sin($dLon / 2) * sin($dLon / 2);
-
-        $c        = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        $distance = $earthRadius * $c;
-
-        return $distance;
-    }
-
-    /**
      * Test Case 3.1.3: Get delivery fee estimate without sender attribute (Unhappy Path)
      *
      * For Brands without Outlet configuration, excluding the sender attribute will
@@ -366,12 +339,13 @@ class OrderFeeEstimationTest extends TestCase
         echo "STEP 1: Prepare order request WITHOUT sender information\n";
         echo "---------------------------------------------------------\n";
 
-        // Create recipient with location in Singapore
+        // Create recipient using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
-        echo "• Recipient created with location at coordinates: 1.303166607308108, 103.83618242858377\n";
+        echo "• Recipient created with location at coordinates: " .
+        TestAddresses::CUSTOMER_LATITUDE . ", " . TestAddresses::CUSTOMER_LONGITUDE . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-fee-no-sender-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('fee-no-sender');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,             // Amount
@@ -455,7 +429,7 @@ class OrderFeeEstimationTest extends TestCase
             echo "====================================================================\n";
             echo "• API Endpoint: " . $fullUrl . "\n";
             echo "• Sender location: NOT PROVIDED (using vendor default location)\n";
-            echo "• Recipient location: " . $recipient->getLocation()->getAddress() . "\n";
+            echo "• Recipient location: " . TestAddresses::CUSTOMER_ADDRESS . "\n";
             echo "• Estimated delivery fee: " . $result['estimated_delivery_fee'] . "\n";
             echo "• NOTE: This estimate is potentially inaccurate because it uses the vendor's default\n";
             echo "  location instead of a specific sender location. For brands without outlet\n";

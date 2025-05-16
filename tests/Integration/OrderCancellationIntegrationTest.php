@@ -3,8 +3,6 @@ namespace Nava\Pandago\Tests\Integration;
 
 use Nava\Pandago\Client;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Contact;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
@@ -77,13 +75,8 @@ class OrderCancellationIntegrationTest extends TestCase
         $validReasons = CancelOrderRequest::getValidReasons();
 
         foreach ($validReasons as $reason) {
-            // Create an order to cancel
-            $location = new Location(
-                '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre',
-                1.303166607308108,
-                103.83618242858377
-            );
-            $recipient = new Contact('Guang You', '+6518006992824', $location);
+            // Create an order to cancel using TestAddresses
+            $recipient = TestAddresses::getCustomerContact();
 
             $request = new CreateOrderRequest(
                 $recipient,
@@ -91,7 +84,7 @@ class OrderCancellationIntegrationTest extends TestCase
                 'Refreshing drink'
             );
 
-            // Set sender
+            // Set sender using TestAddresses
             $sender = TestAddresses::getOutletContact();
             $request->setSender($sender);
 
@@ -153,7 +146,7 @@ class OrderCancellationIntegrationTest extends TestCase
      */
     public function testCancelOrderMultipleTimes()
     {
-        // Create an order to cancel
+        // Create an order to cancel using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
 
         $request = new CreateOrderRequest(
@@ -162,7 +155,7 @@ class OrderCancellationIntegrationTest extends TestCase
             'Refreshing drink'
         );
 
-        // Set sender
+        // Set sender using TestAddresses
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 

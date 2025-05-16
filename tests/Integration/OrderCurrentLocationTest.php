@@ -4,7 +4,6 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
@@ -99,10 +98,10 @@ class OrderCurrentLocationTest extends TestCase
         echo "STEP 1: Create a test order to get an order ID\n";
         echo "-------------------------------------------\n";
 
-        // Create test order
+        // Create test order using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
 
-        $clientOrderId = 'test-location-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('location');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,
@@ -110,7 +109,7 @@ class OrderCurrentLocationTest extends TestCase
         );
         $request->setClientOrderId($clientOrderId);
 
-        // Set sender information
+        // Set sender information using TestAddresses
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
@@ -226,10 +225,10 @@ class OrderCurrentLocationTest extends TestCase
         echo "STEP 1: Create a test order to get an order ID\n";
         echo "-------------------------------------------\n";
 
-        // Create test order (same setup as before)
+        // Create test order using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
 
-        $clientOrderId = 'test-no-driver-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('no-driver');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,
@@ -237,7 +236,7 @@ class OrderCurrentLocationTest extends TestCase
         );
         $request->setClientOrderId($clientOrderId);
 
-        // Set sender information
+        // Set sender information using TestAddresses
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 

@@ -98,11 +98,12 @@ class OrderStatusUpdateTest extends TestCase
         echo "STEP 1: Create a test order to monitor status updates\n";
         echo "--------------------------------------------------\n";
 
-        // Create test order
+        // Create test order using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
-        echo "• Recipient created with location at coordinates: 1.303166607308108, 103.83618242858377\n";
+        echo "• Recipient created with location at coordinates: " .
+        TestAddresses::CUSTOMER_LATITUDE . ", " . TestAddresses::CUSTOMER_LONGITUDE . "\n";
 
-        $clientOrderId = 'test-status-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('status');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,
@@ -110,10 +111,11 @@ class OrderStatusUpdateTest extends TestCase
         );
         $request->setClientOrderId($clientOrderId);
 
-        // Set sender information
+        // Set sender information using TestAddresses
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.3018914131301271, 103.83548392113393\n";
+        echo "• Sender information added with location at coordinates: " .
+        TestAddresses::OUTLET_LATITUDE . ", " . TestAddresses::OUTLET_LONGITUDE . "\n";
 
         try {
             // Create the order to get an order ID
@@ -339,10 +341,10 @@ class OrderStatusUpdateTest extends TestCase
         echo "STEP 1: Create a test order to monitor status transitions\n";
         echo "-----------------------------------------------------\n";
 
-        // Create test order (same setup as the first test)
+        // Create test order using TestAddresses
         $recipient = TestAddresses::getCustomerContact();
 
-        $clientOrderId = 'test-transitions-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('transitions');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,
@@ -350,7 +352,7 @@ class OrderStatusUpdateTest extends TestCase
         );
         $request->setClientOrderId($clientOrderId);
 
-        // Set sender information
+        // Set sender information using TestAddresses
         $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
