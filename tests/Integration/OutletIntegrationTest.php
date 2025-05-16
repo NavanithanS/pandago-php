@@ -195,14 +195,14 @@ class OutletIntegrationTest extends TestCase
             $this->assertEquals($clientVendorId, $outlet->getClientVendorId(), 'Client Vendor ID should match');
             echo "✓ Client Vendor ID matches the request\n";
 
-            $this->assertEquals('Pandago Test Outlet', $outlet->getName(), 'Outlet name should match');
+            $this->assertEquals(TestAddresses::OUTLET_NAME, $outlet->getName(), 'Outlet name should match');
             echo "✓ Outlet name matches the request\n";
 
-            $this->assertEquals('1 Raffles Place, Singapore 048616', $outlet->getAddress(), 'Address should match');
+            $this->assertEquals(TestAddresses::OUTLET_ADDRESS, $outlet->getAddress(), 'Address should match');
             echo "✓ Address matches the request\n";
 
-            $this->assertEquals(1.2842, $outlet->getLatitude(), 'Latitude should match');
-            $this->assertEquals(103.8511, $outlet->getLongitude(), 'Longitude should match');
+            $this->assertEquals(TestAddresses::OUTLET_LATITUDE, $outlet->getLatitude(), 'Latitude should match');
+            $this->assertEquals(TestAddresses::OUTLET_LONGITUDE, $outlet->getLongitude(), 'Longitude should match');
             echo "✓ Coordinates match the request\n";
 
             echo "\nSUMMARY: Successfully created a new outlet\n";
@@ -250,17 +250,7 @@ class OutletIntegrationTest extends TestCase
 
         // If we don't have an outlet from a previous test, create one
         if (! $this->testOutletId) {
-            $initialRequest = new CreateOutletRequest(
-                'Initial Outlet Name',
-                '1 Raffles Place, Singapore 048616',
-                1.2842,
-                103.8511,
-                'Singapore',
-                '+6588888888',
-                'SGD',
-                'en-SG',
-                'Initial description'
-            );
+            $initialRequest = TestAddresses::createOutletRequest();
 
             try {
                 $outlet = $this->client->outlets()->createOrUpdate($clientVendorId, $initialRequest);
@@ -278,15 +268,15 @@ class OutletIntegrationTest extends TestCase
 
         // Create update request with modified fields
         $updateRequest = new CreateOutletRequest(
-            'Updated Outlet Name',                  // name
-            '10 Bayfront Avenue, Singapore 018956', // address
-            1.2839,                                 // latitude
-            103.8607,                               // longitude
-            'Singapore',                            // city
-            '+6599999999',                          // phone_number
-            'SGD',                                  // currency
-            'en-SG',                                // locale
-            'Updated outlet description'            // description
+            'Updated Outlet Name',                  // keep hardcoded (intentional)
+            '10 Bayfront Avenue, Singapore 018956', // keep hardcoded (intentional)
+            1.2839,                                 // keep hardcoded (intentional)
+            103.8607,                               // keep hardcoded (intentional)
+            TestAddresses::OUTLET_CITY,
+            '+6599999999', // keep hardcoded (intentional)
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
+            'Updated outlet description' // keep hardcoded (intentional)
         );
 
         // Add a user to the outlet
@@ -412,15 +402,15 @@ class OutletIntegrationTest extends TestCase
 
         // Use reflection to create a request with missing phone number
         $request = new CreateOutletRequest(
-            'Garrett Popcorn Shops',
-            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
-            1.3018914131301271,
-            103.83548392113393,
-            'Singapore',
-            '',
-            'SGD',
-            'en-SG',
-            'Garrett Popcorn Shops at Takashimaya'
+            TestAddresses::OUTLET_NAME,
+            TestAddresses::OUTLET_ADDRESS,
+            TestAddresses::OUTLET_LATITUDE,
+            TestAddresses::OUTLET_LONGITUDE,
+            TestAddresses::OUTLET_CITY,
+            '', // intentionally empty for test
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
+            TestAddresses::OUTLET_DESCRIPTION
         );
 
         // Use reflection to set phone_number to null (since the constructor validates it)
@@ -563,17 +553,7 @@ class OutletIntegrationTest extends TestCase
 
         // If we don't have an outlet from a previous test, create one
         if (! $this->testOutletId) {
-            $initialRequest = new CreateOutletRequest(
-                'Outlet for User Test',
-                '1 Raffles Place, Singapore 048616',
-                1.2842,
-                103.8511,
-                'Singapore',
-                '+6588888888',
-                'SGD',
-                'en-SG',
-                'Outlet for testing user operations'
-            );
+            $initialRequest = TestAddresses::createOutletRequest();
 
             try {
                 $outlet = $this->client->outlets()->createOrUpdate($clientVendorId, $initialRequest);
@@ -595,10 +575,10 @@ class OutletIntegrationTest extends TestCase
             '1 Raffles Place, Singapore 048616',
             1.2842,
             103.8511,
-            'Singapore',
+            TestAddresses::OUTLET_CITY,
             '+6588888888',
-            'SGD',
-            'en-SG',
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
             'Testing add and delete users simultaneously'
         );
 
