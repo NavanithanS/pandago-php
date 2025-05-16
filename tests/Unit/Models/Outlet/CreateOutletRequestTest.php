@@ -16,15 +16,15 @@ class CreateOutletRequestTest extends TestCase
     public function testConstructWithValidParameters()
     {
         $request = new CreateOutletRequest(
-            'Garrett Popcorn Shops',
-            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
-            1.3018914131301271,
-            103.83548392113393,
-            'Singapore',
-            '+6567379388',
-            'SGD',
-            'en-SG',
-            'Garrett Popcorn Shops at Takashimaya'
+            TestAddresses::OUTLET_NAME,
+            TestAddresses::OUTLET_ADDRESS,
+            TestAddresses::OUTLET_LATITUDE,
+            TestAddresses::OUTLET_LONGITUDE,
+            TestAddresses::OUTLET_CITY,
+            TestAddresses::OUTLET_PHONE,
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
+            TestAddresses::OUTLET_DESCRIPTION
         );
 
         $this->assertEquals(TestAddresses::OUTLET_NAME, $request->toArray()['name']);
@@ -117,15 +117,15 @@ class CreateOutletRequestTest extends TestCase
     public function testSetters()
     {
         $request = new CreateOutletRequest(
-            'Garrett Popcorn Shops',
-            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
-            1.3018914131301271,
-            103.83548392113393,
-            'Singapore',
-            '+6567379388',
-            'SGD',
-            'en-SG',
-            'Garrett Popcorn Shops at Takashimaya'
+            TestAddresses::OUTLET_NAME,
+            TestAddresses::OUTLET_ADDRESS,
+            TestAddresses::OUTLET_LATITUDE,
+            TestAddresses::OUTLET_LONGITUDE,
+            TestAddresses::OUTLET_CITY,
+            TestAddresses::OUTLET_PHONE,
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
+            TestAddresses::OUTLET_DESCRIPTION
         );
 
         $request->setStreet('Jalan Laguna 1');
@@ -158,15 +158,15 @@ class CreateOutletRequestTest extends TestCase
     public function testSetterValidation()
     {
         $request = new CreateOutletRequest(
-            'Garrett Popcorn Shops',
-            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
-            1.3018914131301271,
-            103.83548392113393,
-            'Singapore',
-            '+6567379388',
-            'SGD',
-            'en-SG',
-            'Garrett Popcorn Shops at Takashimaya'
+            TestAddresses::OUTLET_NAME,
+            TestAddresses::OUTLET_ADDRESS,
+            TestAddresses::OUTLET_LATITUDE,
+            TestAddresses::OUTLET_LONGITUDE,
+            TestAddresses::OUTLET_CITY,
+            TestAddresses::OUTLET_PHONE,
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
+            TestAddresses::OUTLET_DESCRIPTION
         );
 
         $this->expectException(ValidationException::class);
@@ -184,15 +184,15 @@ class CreateOutletRequestTest extends TestCase
     public function testToArray()
     {
         $request = new CreateOutletRequest(
-            'Garrett Popcorn Shops',
-            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
-            1.3018914131301271,
-            103.83548392113393,
-            'Singapore',
-            '+6567379388',
-            'SGD',
-            'en-SG',
-            'Garrett Popcorn Shops at Takashimaya'
+            TestAddresses::OUTLET_NAME,
+            TestAddresses::OUTLET_ADDRESS,
+            TestAddresses::OUTLET_LATITUDE,
+            TestAddresses::OUTLET_LONGITUDE,
+            TestAddresses::OUTLET_CITY,
+            TestAddresses::OUTLET_PHONE,
+            TestAddresses::OUTLET_CURRENCY,
+            TestAddresses::OUTLET_LOCALE,
+            TestAddresses::OUTLET_DESCRIPTION
         );
 
         $array = $request->toArray();
