@@ -4,9 +4,9 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Contact;
 use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 /**
@@ -70,13 +70,8 @@ class OrderFeeEstimationTest extends TestCase
         echo "----------------------------------------------------------------\n";
 
         // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient created with location at coordinates: 1.303166607308108, 103.83618242858377\n";
 
         // Create order request with a client order ID for tracing
         $clientOrderId = 'test-fee-' . uniqid();
@@ -90,19 +85,9 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Client order ID: " . $clientOrderId . "\n";
 
         // Set sender information - this is required for fee estimation
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',               // Name
-            '+6500000000',           // Phone Number
-            $senderLocation,         // Location
-            'use the left side door' // Notes
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender information added with location at coordinates: 1.3018914131301271, 103.83548392113393\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -246,18 +231,8 @@ class OrderFeeEstimationTest extends TestCase
         echo "STEP 1: Prepare order request with sender and out-of-range recipient information\n";
         echo "------------------------------------------------------------------------\n";
 
-                                         // Define out-of-range coordinates - way outside normal delivery range in Singapore
-        $outOfRangeLatitude  = 1.4302;   // Far outside delivery area - North Singapore
-        $outOfRangeLongitude = 104.0500; // Far outside delivery area - East towards Johor
-
-        // Create recipient with out-of-range location
-        $location = new Location(
-            'Out of Range Address, Singapore',
-            $outOfRangeLatitude,
-            $outOfRangeLongitude
-        );
-        $recipient = new Contact('Test Recipient', '+6587654321', $location);
-        echo "• Recipient created with out-of-range location at coordinates: $outOfRangeLatitude, $outOfRangeLongitude\n";
+        $recipient = TestAddresses::getOutOfRangeContact();
+        echo "• Recipient created with out-of-range location at coordinates\n";
 
         // Create order request with a client order ID for tracing
         $clientOrderId = 'test-out-of-range-' . uniqid();
@@ -271,18 +246,9 @@ class OrderFeeEstimationTest extends TestCase
         echo "• Client order ID: " . $clientOrderId . "\n";
 
         // Set sender with a valid location in Singapore
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742, // A valid sender location from Singapore
-            103.8486029// A valid sender location from Singapore
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender information added with location at coordinates: 1.3018914131301271, 103.83548392113393\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -401,13 +367,8 @@ class OrderFeeEstimationTest extends TestCase
         echo "---------------------------------------------------------\n";
 
         // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient created with location at coordinates: 1.303166607308108, 103.83618242858377\n";
 
         // Create order request with a client order ID for tracing
         $clientOrderId = 'test-fee-no-sender-' . uniqid();

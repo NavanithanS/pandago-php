@@ -3,6 +3,7 @@ namespace Nava\Pandago\Tests\Unit\Models\Outlet;
 
 use Nava\Pandago\Exceptions\ValidationException;
 use Nava\Pandago\Models\Outlet\CreateOutletRequest;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 class CreateOutletRequestTest extends TestCase
@@ -15,26 +16,26 @@ class CreateOutletRequestTest extends TestCase
     public function testConstructWithValidParameters()
     {
         $request = new CreateOutletRequest(
-            'Trilobyte',
-            '1st Floor, No 8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053,
-            'Prai',
-            '+601110550716',
-            'MYR',
-            'en-MY',
-            'My store description'
+            'Garrett Popcorn Shops',
+            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
+            1.3018914131301271,
+            103.83548392113393,
+            'Singapore',
+            '+6567379388',
+            'SGD',
+            'en-SG',
+            'Garrett Popcorn Shops at Takashimaya'
         );
 
-        $this->assertEquals('Trilobyte', $request->toArray()['name']);
-        $this->assertEquals('1st Floor, No 8, Jalan Laguna 1', $request->toArray()['address']);
-        $this->assertEquals(5.3731476, $request->toArray()['latitude']);
-        $this->assertEquals(100.4068053, $request->toArray()['longitude']);
-        $this->assertEquals('Prai', $request->toArray()['city']);
-        $this->assertEquals('+601110550716', $request->toArray()['phone_number']);
-        $this->assertEquals('MYR', $request->toArray()['currency']);
-        $this->assertEquals('en-MY', $request->toArray()['locale']);
-        $this->assertEquals('My store description', $request->toArray()['description']);
+        $this->assertEquals(TestAddresses::OUTLET_NAME, $request->toArray()['name']);
+        $this->assertEquals(TestAddresses::OUTLET_ADDRESS, $request->toArray()['address']);
+        $this->assertEquals(TestAddresses::OUTLET_LATITUDE, $request->toArray()['latitude']);
+        $this->assertEquals(TestAddresses::OUTLET_LONGITUDE, $request->toArray()['longitude']);
+        $this->assertEquals(TestAddresses::OUTLET_CITY, $request->toArray()['city']);
+        $this->assertEquals(TestAddresses::OUTLET_PHONE, $request->toArray()['phone_number']);
+        $this->assertEquals(TestAddresses::OUTLET_CURRENCY, $request->toArray()['currency']);
+        $this->assertEquals(TestAddresses::OUTLET_LOCALE, $request->toArray()['locale']);
+        $this->assertEquals(TestAddresses::OUTLET_DESCRIPTION, $request->toArray()['description']);
     }
 
     /**
@@ -116,14 +117,15 @@ class CreateOutletRequestTest extends TestCase
     public function testSetters()
     {
         $request = new CreateOutletRequest(
-            'Trilobyte',
-            '1st Floor, No 8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053,
-            'Prai',
-            '+601110550716',
-            'MYR',
-            'en-MY'
+            'Garrett Popcorn Shops',
+            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
+            1.3018914131301271,
+            103.83548392113393,
+            'Singapore',
+            '+6567379388',
+            'SGD',
+            'en-SG',
+            'Garrett Popcorn Shops at Takashimaya'
         );
 
         $request->setStreet('Jalan Laguna 1');
@@ -156,14 +158,15 @@ class CreateOutletRequestTest extends TestCase
     public function testSetterValidation()
     {
         $request = new CreateOutletRequest(
-            'Trilobyte',
-            '1st Floor, No 8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053,
-            'Prai',
-            '+601110550716',
-            'MYR',
-            'en-MY'
+            'Garrett Popcorn Shops',
+            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
+            1.3018914131301271,
+            103.83548392113393,
+            'Singapore',
+            '+6567379388',
+            'SGD',
+            'en-SG',
+            'Garrett Popcorn Shops at Takashimaya'
         );
 
         $this->expectException(ValidationException::class);
@@ -181,15 +184,15 @@ class CreateOutletRequestTest extends TestCase
     public function testToArray()
     {
         $request = new CreateOutletRequest(
-            'Trilobyte',
-            '1st Floor, No 8, Jalan Laguna 1',
-            5.3731476,
-            100.4068053,
-            'Prai',
-            '+601110550716',
-            'MYR',
-            'en-MY',
-            'My store description'
+            'Garrett Popcorn Shops',
+            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
+            1.3018914131301271,
+            103.83548392113393,
+            'Singapore',
+            '+6567379388',
+            'SGD',
+            'en-SG',
+            'Garrett Popcorn Shops at Takashimaya'
         );
 
         $array = $request->toArray();

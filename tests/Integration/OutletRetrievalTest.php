@@ -5,6 +5,7 @@ use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Outlet\CreateOutletRequest;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 /**
@@ -96,17 +97,7 @@ class OutletRetrievalTest extends TestCase
         echo "• Generated client vendor ID: " . $clientVendorId . "\n";
 
         // Create outlet request with all required fields
-        $request = new CreateOutletRequest(
-            'Test Outlet To Retrieve',           // name
-            '1 Raffles Place, Singapore 048616', // address
-            1.2842,                              // latitude
-            103.8511,                            // longitude
-            'Singapore',                         // city
-            '+6588888888',                       // phone_number
-            'SGD',                               // currency
-            'en-SG',                             // locale
-            'Test outlet for retrieval test'     // description
-        );
+        $request = TestAddresses::createOutletRequest();
 
         try {
             // Create the outlet

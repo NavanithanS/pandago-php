@@ -11,6 +11,7 @@ use Nava\Pandago\Models\Order\Order;
 use Nava\Pandago\Models\Order\OrderCoordinate;
 use Nava\Pandago\Models\Order\UpdateOrderRequest;
 use Nava\Pandago\Resources\OrderResource;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 class OrderResourceTest extends TestCase
@@ -29,8 +30,8 @@ class OrderResourceTest extends TestCase
 
         $orderResource = new OrderResource($client);
 
-        $location  = new Location('20 Esplanade Drive', 1.2857488, 103.8548608);
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $location  = TestAddresses::getCustomerLocation();
+        $recipient = TestAddresses::getCustomerContact();
         $request   = new CreateOrderRequest($recipient, 23.50, 'Refreshing drink');
 
         $order = $orderResource->create($request);
@@ -111,8 +112,8 @@ class OrderResourceTest extends TestCase
             ->with('GET', '/orders/y0ud-000001/coordinates')
             ->andReturn([
                 'client_order_id' => 'client-ref-000001',
-                'latitude'        => 1.2857488,
-                'longitude'       => 103.8548608,
+                'latitude'        => 1.303166607308108,
+                'longitude'       => 103.83618242858377,
                 'updated_at'      => 1536802252,
             ]);
 
@@ -122,8 +123,8 @@ class OrderResourceTest extends TestCase
 
         $this->assertInstanceOf(OrderCoordinate::class, $coordinates);
         $this->assertEquals('client-ref-000001', $coordinates->getClientOrderId());
-        $this->assertEquals(1.2857488, $coordinates->getLatitude());
-        $this->assertEquals(103.8548608, $coordinates->getLongitude());
+        $this->assertEquals(1.303166607308108, $coordinates->getLatitude());
+        $this->assertEquals(103.83618242858377, $coordinates->getLongitude());
         $this->assertEquals(1536802252, $coordinates->getUpdatedAt());
     }
 
@@ -140,8 +141,8 @@ class OrderResourceTest extends TestCase
 
         $orderResource = new OrderResource($client);
 
-        $location  = new Location('20 Esplanade Drive', 1.2857488, 103.8548608);
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $location  = new Location('391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre', 1.303166607308108, 103.83618242858377);
+        $recipient = new Contact('Guang You', '+6518006992824', $location);
         $request   = new CreateOrderRequest($recipient, 23.50, 'Refreshing drink');
 
         $result = $orderResource->estimateFee($request);
@@ -164,8 +165,8 @@ class OrderResourceTest extends TestCase
 
         $orderResource = new OrderResource($client);
 
-        $location  = new Location('20 Esplanade Drive', 1.2857488, 103.8548608);
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $location  = new Location('391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre', 1.303166607308108, 103.83618242858377);
+        $recipient = new Contact('Guang You', '+6518006992824', $location);
         $request   = new CreateOrderRequest($recipient, 23.50, 'Refreshing drink');
 
         $result = $orderResource->estimateTime($request);

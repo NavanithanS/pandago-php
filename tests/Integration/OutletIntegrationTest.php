@@ -5,6 +5,7 @@ use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Outlet\CreateOutletRequest;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 /**
@@ -134,17 +135,7 @@ class OutletIntegrationTest extends TestCase
         echo "• Generated client vendor ID: " . $clientVendorId . "\n";
 
         // Create outlet request with all required fields
-        $request = new CreateOutletRequest(
-            'Pandago Test Outlet',                // name
-            '1 Raffles Place, Singapore 048616',  // address
-            1.2923742,                               // latitude
-            103.8486029,                             // longitude
-            'Singapore',                          // city
-            '+6588888888',                        // phone_number
-            'SGD',                                // currency
-            'en-SG',                              // locale
-            'Integration test outlet description' // description
-        );
+        $request = TestAddresses::createOutletRequest();
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -421,15 +412,15 @@ class OutletIntegrationTest extends TestCase
 
         // Use reflection to create a request with missing phone number
         $request = new CreateOutletRequest(
-            'Missing Phone Outlet',
-            '1 Raffles Place, Singapore 048616',
-            1.2842,
-            103.8511,
+            'Garrett Popcorn Shops',
+            '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872',
+            1.3018914131301271,
+            103.83548392113393,
             'Singapore',
-            '', // Empty phone number
+            '',
             'SGD',
             'en-SG',
-            'Test missing phone number'
+            'Garrett Popcorn Shops at Takashimaya'
         );
 
         // Use reflection to set phone_number to null (since the constructor validates it)

@@ -4,11 +4,10 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Contact;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 /**
@@ -100,13 +99,8 @@ class OrderStatusUpdateTest extends TestCase
         echo "--------------------------------------------------\n";
 
         // Create test order
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient created with location at coordinates: 1.303166607308108, 103.83618242858377\n";
 
         $clientOrderId = 'test-status-' . uniqid();
         $request       = new CreateOrderRequest(
@@ -117,18 +111,9 @@ class OrderStatusUpdateTest extends TestCase
         $request->setClientOrderId($clientOrderId);
 
         // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender information added with location at coordinates: 1.3018914131301271, 103.83548392113393\n";
 
         try {
             // Create the order to get an order ID
@@ -355,12 +340,7 @@ class OrderStatusUpdateTest extends TestCase
         echo "-----------------------------------------------------\n";
 
         // Create test order (same setup as the first test)
-        $recipientLocation = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
+        $recipient = TestAddresses::getCustomerContact();
 
         $clientOrderId = 'test-transitions-' . uniqid();
         $request       = new CreateOrderRequest(
@@ -371,16 +351,7 @@ class OrderStatusUpdateTest extends TestCase
         $request->setClientOrderId($clientOrderId);
 
         // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742,
-            103.8486029
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         try {

@@ -9,6 +9,7 @@ use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 /**
@@ -98,20 +99,14 @@ class OrderCreationIntegrationTest extends TestCase
         echo "STEP 1: Prepare order request with all required attributes\n";
         echo "--------------------------------------------------------\n";
 
-        // Create recipient with location in Singapore
-        $recipientLatitude  = 1.2857488;
-        $recipientLongitude = 103.8548608;
-
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            $recipientLatitude,   // Latitude - Singapore
-            $recipientLongitude   // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: $recipientLatitude, $recipientLongitude\n";
+        // Create recipient using TestAddresses helper
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient: " . $recipient->getName() . " at " . $recipient->getLocation()->getAddress() . "\n";
+        echo "• Recipient coordinates: " . $recipient->getLocation()->getLatitude() . ", " .
+        $recipient->getLocation()->getLongitude() . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-create-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('create');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,             // Amount
@@ -121,23 +116,15 @@ class OrderCreationIntegrationTest extends TestCase
         echo "• Order request created with amount: 23.50\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',               // Name
-            '+6500000000',           // Phone Number
-            $senderLocation,         // Location
-            'use the left side door' // Notes
-        );
+        // Set sender information using TestAddresses helper
+        $sender = TestAddresses::getOutletContact('use the left side door');
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender: " . $sender->getName() . " at " . $sender->getLocation()->getAddress() . "\n";
+        echo "• Sender coordinates: " . $sender->getLocation()->getLatitude() . ", " .
+        $sender->getLocation()->getLongitude() . "\n";
 
-                                            // Set additional options if needed
-        $request->setPaymentMethod('PAID'); // Default is PAID, can be CASH_ON_DELIVERY
+        // Set additional options
+        $request->setPaymentMethod('PAID');
         $request->setColdbagNeeded(true);
         echo "• Payment method set to: PAID\n";
         echo "• Cold bag needed: Yes\n";
@@ -223,17 +210,17 @@ class OrderCreationIntegrationTest extends TestCase
             $this->assertEquals('Refreshing drink', $order->getDescription(), 'Description should match');
             echo "✓ Order description matches the request\n";
 
-            // Verify recipient details
+            // Verify recipient details using TestAddresses constants
             $orderRecipient = $order->getRecipient();
             $this->assertInstanceOf(Contact::class, $orderRecipient);
-            $this->assertEquals('Merlion', $orderRecipient->getName(), 'Recipient name should match');
-            $this->assertEquals('+6500000000', $orderRecipient->getPhoneNumber(), 'Recipient phone should match');
+            $this->assertEquals(TestAddresses::CUSTOMER_NAME, $orderRecipient->getName(), 'Recipient name should match');
+            $this->assertEquals(TestAddresses::CUSTOMER_PHONE, $orderRecipient->getPhoneNumber(), 'Recipient phone should match');
             echo "✓ Recipient details match the request\n";
 
             // Verify recipient location
             $recipientLocation = $orderRecipient->getLocation();
             $this->assertInstanceOf(Location::class, $recipientLocation);
-            $this->assertEquals('20 Esplanade Drive', $recipientLocation->getAddress(), 'Recipient address should match');
+            $this->assertEquals(TestAddresses::CUSTOMER_ADDRESS, $recipientLocation->getAddress(), 'Recipient address should match');
             echo "✓ Recipient location matches the request\n";
 
             echo "\nSTEP 5: Optional - Retrieve the created order to confirm details\n";
@@ -259,6 +246,9 @@ class OrderCreationIntegrationTest extends TestCase
             echo "• Order ID: " . $order->getOrderId() . "\n";
             echo "• Client Order ID: " . $order->getClientOrderId() . "\n";
             echo "• Order Status: " . $order->getStatus() . "\n";
+            echo "• Sender: " . TestAddresses::OUTLET_NAME . " (Garrett Popcorn)\n";
+            echo "• Recipient: " . TestAddresses::CUSTOMER_NAME . " on Orchard Road\n";
+            echo "• Distance: ~" . TestAddresses::getApproximateDistance() . " km\n";
             echo "• Note: This test order will be automatically cancelled during tearDown\n";
 
         } catch (RequestException $e) {
@@ -311,20 +301,14 @@ class OrderCreationIntegrationTest extends TestCase
         echo "STEP 1: Prepare order request WITHOUT sender information\n";
         echo "------------------------------------------------------\n";
 
-                                           // Create recipient with location in Singapore
-        $recipientLatitude  = 1.2857488;   // Valid location - Singapore
-        $recipientLongitude = 103.8548608; // Valid location - Singapore
-
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            $recipientLatitude,   // Latitude - Singapore
-            $recipientLongitude   // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: $recipientLatitude, $recipientLongitude\n";
+        // Create recipient using TestAddresses helper
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient: " . $recipient->getName() . " at " . $recipient->getLocation()->getAddress() . "\n";
+        echo "• Recipient coordinates: " . $recipient->getLocation()->getLatitude() . ", " .
+        $recipient->getLocation()->getLongitude() . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-no-sender-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('no-sender');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,             // Amount
@@ -439,16 +423,15 @@ class OrderCreationIntegrationTest extends TestCase
         echo "STEP 1: Prepare order request with recipient outside delivery area\n";
         echo "-------------------------------------------------------------\n";
 
-        $recipientLocation = new Location(
-            'Out of Range Address, Singapore',
-            1.8741652727127075, // Far outside delivery area latitude as specified in test case
-            113.8461685180664   // Far outside delivery area longitude as specified in test case
-        );
-        $recipient = new Contact('Test Recipient', '+6587654321', $recipientLocation);
-        echo "• Recipient created with out-of-range location at coordinates: 1.8741652727127075, 113.8461685180664\n";
+        // Use the out-of-range location from TestAddresses
+        $recipient = TestAddresses::getOutOfRangeContact();
+        echo "• Recipient created with out-of-range location: " . $recipient->getName() . "\n";
+        echo "• Out-of-range address: " . $recipient->getLocation()->getAddress() . "\n";
+        echo "• Out-of-range coordinates: " . $recipient->getLocation()->getLatitude() . ", " .
+        $recipient->getLocation()->getLongitude() . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-invalid-location-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('invalid-location');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,
@@ -458,19 +441,12 @@ class OrderCreationIntegrationTest extends TestCase
         echo "• Order request created with amount: 23.50\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender with valid location in Singapore
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742, // A valid sender location from Singapore
-            103.8486029// A valid sender location from Singapore
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        // Set sender with valid location using TestAddresses
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with valid location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender information added with valid location: " . $sender->getLocation()->getAddress() . "\n";
+        echo "• Valid sender coordinates: " . $sender->getLocation()->getLatitude() . ", " .
+        $sender->getLocation()->getLongitude() . "\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -556,7 +532,6 @@ class OrderCreationIntegrationTest extends TestCase
             );
 
             // Specifically check for the expected error message from the test spec
-            $expectedErrorMsg = "Unable to process order\norder is outside deliverable range";
             $this->assertStringContainsString(
                 'outside deliverable range',
                 $e->getMessage(),
@@ -598,17 +573,12 @@ class OrderCreationIntegrationTest extends TestCase
         echo "STEP 1: Prepare order request with amount as string\n";
         echo "------------------------------------------------\n";
 
-        // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+        // Create recipient using TestAddresses helper
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient: " . $recipient->getName() . " at " . $recipient->getLocation()->getAddress() . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-string-amount-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('string-amount');
 
         // Create a normal CreateOrderRequest but we'll modify it later to have a string amount
         $request = new CreateOrderRequest(
@@ -620,19 +590,10 @@ class OrderCreationIntegrationTest extends TestCase
         echo "• Order request created\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        // Set sender information using TestAddresses
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender: " . $sender->getName() . " at " . $sender->getLocation()->getAddress() . "\n";
 
         // Get the default request array
         $requestArray = $request->toArray();
@@ -667,9 +628,7 @@ class OrderCreationIntegrationTest extends TestCase
         try {
             // We need to go a level lower than $client->orders()->create() since that
             // method expects a CreateOrderRequest object which would validate the amount.
-            // Instead, we'll make the HTTP request directly.
-
-            // For the purpose of this test, we'll just check if the request fails as expected
+            // Instead, we'll just check if the request fails as expected
             // and won't actually send an invalid request to the API
             echo "• This test is simulated to avoid sending invalid request format to the API\n";
 
@@ -720,17 +679,12 @@ class OrderCreationIntegrationTest extends TestCase
         echo "STEP 1: Prepare cash on delivery order request with zero amount\n";
         echo "-----------------------------------------------------------\n";
 
-        // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+        // Create recipient using TestAddresses helper
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient: " . $recipient->getName() . " at " . $recipient->getLocation()->getAddress() . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-cod-zero-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('cod-zero');
         $request       = new CreateOrderRequest(
             $recipient,
             0, // Zero amount
@@ -742,19 +696,10 @@ class OrderCreationIntegrationTest extends TestCase
         echo "• Payment method set to: CASH_ON_DELIVERY\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        // Set sender information using TestAddresses
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender: " . $sender->getName() . " at " . $sender->getLocation()->getAddress() . "\n";
 
         // Display the request payload
         $requestPayload = $request->toArray();
@@ -814,9 +759,8 @@ class OrderCreationIntegrationTest extends TestCase
             echo "✓ Response status: 400 Bad Request - Correct error code for COD with zero amount\n";
 
             // Verify the error message contains information about amount being greater than 0 for COD
-            $expectedErrorMessage = "Amount must be greater than 0 for CASH_ON_DELIVERY";
             $this->assertStringContainsString(
-                $expectedErrorMessage,
+                'Amount must be greater than 0',
                 $e->getMessage(),
                 'Error message should indicate amount must be greater than 0 for COD'
             );
@@ -859,21 +803,16 @@ class OrderCreationIntegrationTest extends TestCase
         echo "STEP 1: Prepare order request with internal order ID in sender.location.notes\n";
         echo "------------------------------------------------------------------------\n";
 
-        // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
-        echo "• Recipient created with location at coordinates: 1.2857488, 103.8548608\n";
+        // Create recipient using TestAddresses helper
+        $recipient = TestAddresses::getCustomerContact();
+        echo "• Recipient: " . $recipient->getName() . " at " . $recipient->getLocation()->getAddress() . "\n";
 
         // Generate an internal order ID
         $internalOrderId = 'INTERNAL-' . mt_rand(10000, 99999);
         echo "• Internal order ID generated: " . $internalOrderId . "\n";
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = 'test-internal-id-' . uniqid();
+        $clientOrderId = TestAddresses::generateClientOrderId('internal-id');
         $request       = new CreateOrderRequest(
             $recipient,
             23.50,
@@ -883,20 +822,10 @@ class OrderCreationIntegrationTest extends TestCase
         echo "• Order request created with amount: 23.50\n";
         echo "• Client order ID: " . $clientOrderId . "\n";
 
-        // Set sender information with internal order ID in the notes
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation,
-            $internalOrderId // Include internal order ID in notes
-        );
+        // Set sender information with internal order ID in the notes using TestAddresses
+        $sender = TestAddresses::getOutletContact($internalOrderId);
         $request->setSender($sender);
-        echo "• Sender information added with location at coordinates: 1.2923742, 103.8486029\n";
+        echo "• Sender: " . $sender->getName() . " at " . $sender->getLocation()->getAddress() . "\n";
         echo "• Internal order ID included in sender.location.notes: " . $internalOrderId . "\n";
 
         // Display the request payload

@@ -4,11 +4,10 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Contact;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 use Nava\Pandago\Tests\Util\MockCallbackServer;
 
@@ -105,12 +104,7 @@ class OrderCancellationTest extends TestCase
     private function createTestOrder($description = 'Cancellation Test Order')
     {
         // Create recipient with location in Singapore
-        $recipientLocation = new Location(
-            '20 Esplanade Drive', // Address
-            1.2857488,            // Latitude - Singapore
-            103.8548608           // Longitude - Singapore
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
+        $recipient = TestAddresses::getCustomerContact();
 
         // Create order request with a client order ID for tracing
         $clientOrderId = 'test-cancel-' . uniqid();
@@ -122,17 +116,7 @@ class OrderCancellationTest extends TestCase
         $request->setClientOrderId($clientOrderId);
 
         // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01', // Address
-            1.2923742,             // Latitude - Singapore
-            103.8486029            // Longitude - Singapore
-        );
-        $sender = new Contact(
-            'Pandago',               // Name
-            '+6500000000',           // Phone Number
-            $senderLocation,         // Location
-            'use the left side door' // Notes
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         // Create the order

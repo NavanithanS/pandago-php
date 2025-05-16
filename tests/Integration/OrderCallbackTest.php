@@ -4,11 +4,10 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Config;
 use Nava\Pandago\Exceptions\RequestException;
-use Nava\Pandago\Models\Contact;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 /**
@@ -140,12 +139,7 @@ class OrderCallbackTest extends TestCase
         echo "-----------------------------------------------------\n";
 
         // Create test order
-        $recipientLocation = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
+        $recipient = TestAddresses::getCustomerContact();
 
         $clientOrderId = 'test-callback-' . uniqid();
         $request       = new CreateOrderRequest(
@@ -156,16 +150,7 @@ class OrderCallbackTest extends TestCase
         $request->setClientOrderId($clientOrderId);
 
         // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742,
-            103.8486029
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         try {
@@ -291,12 +276,7 @@ class OrderCallbackTest extends TestCase
         echo "• The callback is triggered when a rider accepts the delivery\n";
 
         // Create test order
-        $recipientLocation = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $recipientLocation);
+        $recipient = TestAddresses::getCustomerContact();
 
         $clientOrderId = 'test-courier-accept-' . uniqid();
         $request       = new CreateOrderRequest(
@@ -307,16 +287,7 @@ class OrderCallbackTest extends TestCase
         $request->setClientOrderId($clientOrderId);
 
         // Set sender information
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742,
-            103.8486029
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         try {

@@ -5,6 +5,7 @@ use Nava\Pandago\Models\Contact;
 use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\Order;
 use Nava\Pandago\Models\Timeline;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 class OrderTest extends TestCase
@@ -15,22 +16,22 @@ class OrderTest extends TestCase
             'order_id'              => 'y0ud-000001',
             'client_order_id'       => 'client-ref-000001',
             'sender'                => [
-                'name'         => 'Pandago',
-                'phone_number' => '+6500000000',
+                'name'         => TestAddresses::OUTLET_CONTACT_NAME,
+                'phone_number' => TestAddresses::OUTLET_PHONE,
                 'location'     => [
-                    'address'   => '1 2nd Street #08-01',
-                    'latitude'  => 1.2923742,
-                    'longitude' => 103.8486029,
+                    'address'   => TestAddresses::OUTLET_ADDRESS,
+                    'latitude'  => TestAddresses::OUTLET_LATITUDE,
+                    'longitude' => TestAddresses::OUTLET_LONGITUDE,
                 ],
                 'notes'        => 'use the left side door',
             ],
             'recipient'             => [
-                'name'         => 'Merlion',
-                'phone_number' => '+6500000000',
+                'name'         => TestAddresses::CUSTOMER_NAME,
+                'phone_number' => TestAddresses::CUSTOMER_PHONE,
                 'location'     => [
-                    'address'   => '20 Esplanade Drive',
-                    'latitude'  => 1.2857488,
-                    'longitude' => 103.8548608,
+                    'address'   => TestAddresses::CUSTOMER_ADDRESS,
+                    'latitude'  => TestAddresses::CUSTOMER_LATITUDE,
+                    'longitude' => TestAddresses::CUSTOMER_LONGITUDE,
                 ],
                 'notes'        => 'use lift A and leave at the front door',
             ],
@@ -80,30 +81,30 @@ class OrderTest extends TestCase
         // Check sender details
         $sender = $order->getSender();
         $this->assertInstanceOf(Contact::class, $sender);
-        $this->assertEquals('Pandago', $sender->getName());
-        $this->assertEquals('+6500000000', $sender->getPhoneNumber());
+        $this->assertEquals('Garrett Popcorn Shops', $sender->getName());
+        $this->assertEquals('+6518006992824', $sender->getPhoneNumber());
         $this->assertEquals('use the left side door', $sender->getNotes());
 
         // Check sender location
         $senderLocation = $sender->getLocation();
         $this->assertInstanceOf(Location::class, $senderLocation);
-        $this->assertEquals('1 2nd Street #08-01', $senderLocation->getAddress());
-        $this->assertEquals(1.2923742, $senderLocation->getLatitude());
-        $this->assertEquals(103.8486029, $senderLocation->getLongitude());
+        $this->assertEquals('391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre', $senderLocation->getAddress());
+        $this->assertEquals(1.3018914131301271, $senderLocation->getLatitude());
+        $this->assertEquals(103.83548392113393, $senderLocation->getLongitude());
 
         // Check recipient details
         $recipient = $order->getRecipient();
         $this->assertInstanceOf(Contact::class, $recipient);
-        $this->assertEquals('Merlion', $recipient->getName());
-        $this->assertEquals('+6500000000', $recipient->getPhoneNumber());
+        $this->assertEquals('Guang You', $recipient->getName());
+        $this->assertEquals('+6518006992824', $recipient->getPhoneNumber());
         $this->assertEquals('use lift A and leave at the front door', $recipient->getNotes());
 
         // Check recipient location
         $recipientLocation = $recipient->getLocation();
         $this->assertInstanceOf(Location::class, $recipientLocation);
-        $this->assertEquals('20 Esplanade Drive', $recipientLocation->getAddress());
-        $this->assertEquals(1.2857488, $recipientLocation->getLatitude());
-        $this->assertEquals(103.8548608, $recipientLocation->getLongitude());
+        $this->assertEquals('391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre', $recipientLocation->getAddress());
+        $this->assertEquals(1.303166607308108, $recipientLocation->getLatitude());
+        $this->assertEquals(103.83618242858377, $recipientLocation->getLongitude());
 
         // Check timeline
         $timeline = $order->getTimeline();

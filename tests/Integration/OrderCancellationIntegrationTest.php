@@ -8,6 +8,7 @@ use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 class OrderCancellationIntegrationTest extends TestCase
@@ -78,11 +79,11 @@ class OrderCancellationIntegrationTest extends TestCase
         foreach ($validReasons as $reason) {
             // Create an order to cancel
             $location = new Location(
-                '20 Esplanade Drive',
-                1.2857488,
-                103.8548608
+                '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre',
+                1.303166607308108,
+                103.83618242858377
             );
-            $recipient = new Contact('Merlion', '+6500000000', $location);
+            $recipient = new Contact('Guang You', '+6518006992824', $location);
 
             $request = new CreateOrderRequest(
                 $recipient,
@@ -91,16 +92,7 @@ class OrderCancellationIntegrationTest extends TestCase
             );
 
             // Set sender
-            $senderLocation = new Location(
-                '1 2nd Street #08-01',
-                1.2923742,
-                103.8486029
-            );
-            $sender = new Contact(
-                'Pandago',
-                '+6500000000',
-                $senderLocation
-            );
+            $sender = TestAddresses::getOutletContact();
             $request->setSender($sender);
 
             try {
@@ -162,12 +154,7 @@ class OrderCancellationIntegrationTest extends TestCase
     public function testCancelOrderMultipleTimes()
     {
         // Create an order to cancel
-        $location = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $recipient = TestAddresses::getCustomerContact();
 
         $request = new CreateOrderRequest(
             $recipient,
@@ -176,16 +163,7 @@ class OrderCancellationIntegrationTest extends TestCase
         );
 
         // Set sender
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742,
-            103.8486029
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         try {

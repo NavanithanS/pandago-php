@@ -4,11 +4,11 @@ namespace Nava\Pandago\Tests\Integration;
 use Nava\Pandago\Client;
 use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Contact;
-use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
 use Nava\Pandago\Models\Order\UpdateOrderRequest;
+use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 
 class OrderResourceTest extends TestCase
@@ -58,12 +58,7 @@ class OrderResourceTest extends TestCase
     public function testCreateOrder()
     {
         // Create recipient
-        $location = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $recipient = TestAddresses::getCustomerContact();
 
         // Create request
         $request = new CreateOrderRequest(
@@ -84,17 +79,7 @@ class OrderResourceTest extends TestCase
             $request->setClientVendorId($clientVendorId);
         } else {
             // If no client vendor ID is provided, set a sender
-            $senderLocation = new Location(
-                '1 2nd Street #08-01',
-                1.2923742,
-                103.8486029
-            );
-            $sender = new Contact(
-                'Pandago',
-                '+6500000000',
-                $senderLocation,
-                'use the left side door'
-            );
+            $sender = TestAddresses::getOutletContact();
             $request->setSender($sender);
         }
 
@@ -120,14 +105,14 @@ class OrderResourceTest extends TestCase
             } else {
                 $sender = $order->getSender();
                 $this->assertInstanceOf(Contact::class, $sender);
-                $this->assertEquals('Pandago', $sender->getName());
+                $this->assertEquals('Garrett Popcorn Shops', $sender->getName());
             }
 
             // Verify recipient
             $orderRecipient = $order->getRecipient();
             $this->assertInstanceOf(Contact::class, $orderRecipient);
-            $this->assertEquals('Merlion', $orderRecipient->getName());
-            $this->assertEquals('+6500000000', $orderRecipient->getPhoneNumber());
+            $this->assertEquals('Guang You', $orderRecipient->getName());
+            $this->assertEquals('+6518006992824', $orderRecipient->getPhoneNumber());
 
             return $order;
         } catch (RequestException $e) {
@@ -212,12 +197,7 @@ class OrderResourceTest extends TestCase
     public function testEstimateFee()
     {
         // Create request for fee estimation
-        $location = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $recipient = TestAddresses::getCustomerContact();
 
         $request = new CreateOrderRequest(
             $recipient,
@@ -226,16 +206,7 @@ class OrderResourceTest extends TestCase
         );
 
         // Set sender
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742,
-            103.8486029
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         try {
@@ -254,12 +225,7 @@ class OrderResourceTest extends TestCase
     public function testEstimateTime()
     {
         // Create request for time estimation
-        $location = new Location(
-            '20 Esplanade Drive',
-            1.2857488,
-            103.8548608
-        );
-        $recipient = new Contact('Merlion', '+6500000000', $location);
+        $recipient = TestAddresses::getCustomerContact();
 
         $request = new CreateOrderRequest(
             $recipient,
@@ -268,16 +234,7 @@ class OrderResourceTest extends TestCase
         );
 
         // Set sender
-        $senderLocation = new Location(
-            '1 2nd Street #08-01',
-            1.2923742,
-            103.8486029
-        );
-        $sender = new Contact(
-            'Pandago',
-            '+6500000000',
-            $senderLocation
-        );
+        $sender = TestAddresses::getOutletContact();
         $request->setSender($sender);
 
         try {
