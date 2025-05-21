@@ -665,11 +665,16 @@ class Order
             $data['client_order_id'] = $this->clientOrderId;
         }
 
+        // Handle sender information
         if (null !== $this->sender) {
             $data['sender'] = $this->sender->toArray();
-        }
 
-        if (null !== $this->clientVendorId) {
+            // Add client_vendor_id to the sender array if it exists
+            if (null !== $this->clientVendorId) {
+                $data['sender']['client_vendor_id'] = $this->clientVendorId;
+            }
+        } elseif (null !== $this->clientVendorId) {
+            // Only use client_vendor_id alone if no sender object exists
             $data['sender'] = ['client_vendor_id' => $this->clientVendorId];
         }
 

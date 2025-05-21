@@ -6,29 +6,33 @@ A robust PHP client library for interacting with the pandago API for on-demand c
 
 -   🔒 Secure JWT-based authentication and token management
 -   📦 Complete order operations support:
-    -   Order creation and submission
-    -   Order tracking and status updates
-    -   Order cancellation and modification
+    -   Order creation and management
+    -   Real-time tracking and status updates
+    -   Fee and delivery time estimation
+    -   Order cancellation
+    -   Proof of delivery/pickup retrieval
 -   🏪 Full outlet management capabilities
--   ✅ Built-in validation for all entity types
--   🛠️ Comprehensive error handling with specific exception types
--   📦 Laravel integration via service provider and facade
--   🧪 Detailed test coverage
+-   ✅ Built-in validation for all request parameters
+-   🛠️ Comprehensive error handling with context-aware suggestions
+-   🚀 Laravel integration via service provider and facade
+-   🧪 Extensive test coverage
 
 ## Requirements
 
--   PHP 7.1 or higher
+-   PHP 7.1 or later
 -   ext-json
--   Guzzle HTTP Client
--   Firebase JWT
--   Ramsey UUID
+-   GuzzleHttp/Guzzle (^6.3|^7.0)
+-   Firebase/php-jwt (^5.0|^6.0)
+-   Ramsey/uuid (^3.8|^4.0)
+-   Symfony/validator (^3.4|^4.0|^5.0|^6.0)
+-   PSR-3 compatible logger
 
 ## Installation
 
 Install via Composer:
 
 ```bash
-composer require Nava/pandago-php
+composer require nava/pandago-php
 ```
 
 ## Quick Start
@@ -85,11 +89,18 @@ $sender = new Contact(
 
 $request->setSender($sender);
 
+// Set additional options if needed
+$request->setPaymentMethod('PAID');
+$request->setColdbagNeeded(true);
+
 // Create the order
 try {
     $order = $client->orders()->create($request);
-    echo "Order created with ID: " . $order->getOrderId() . "\n";
+
+    echo "Order created successfully!\n";
+    echo "Order ID: " . $order->getOrderId() . "\n";
     echo "Status: " . $order->getStatus() . "\n";
+    echo "Tracking Link: " . $order->getTrackingLink() . "\n";
 } catch (\Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }
@@ -97,7 +108,7 @@ try {
 
 ## Laravel Integration
 
-This package provides a Laravel service provider to make integration easy.
+This package includes Laravel integration through a service provider and facade.
 
 ### Setup
 
@@ -113,14 +124,16 @@ Then, add your Pandago API credentials to your `.env` file:
 PANDAGO_CLIENT_ID=pandago:my:00000000-0000-0000-0000-000000000000
 PANDAGO_KEY_ID=00000000-0000-0000-0000-000000000001
 PANDAGO_SCOPE=pandago.api.my.*
-PANDAGO_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
-...
------END RSA PRIVATE KEY-----"
+PANDAGO_PRIVATE_KEY="/path/to/your/private-key.pem"
+# OR use inline private key:
+# PANDAGO_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+# MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSj...
+# -----END PRIVATE KEY-----"
 PANDAGO_COUNTRY=my
 PANDAGO_ENVIRONMENT=sandbox
 ```
 
-Alternatively, you can store your private key in a file and reference it in the `config/pandago.php` file:
+Alternatively, you can reference a private key file in the `config/pandago.php` file:
 
 ```php
 'private_key' => file_get_contents(storage_path('keys/pandago.pem')),
@@ -141,40 +154,62 @@ use Nava\Pandago\Models\Contact;
 use Nava\Pandago\Models\Location;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 
-class OrderController extends Controller
+class DeliveryController extends Controller
 {
-    public function create(Request $request)
+    public function createOrder(Request $request)
     {
-        $location = new Location(
-            $request->input('address'),
-            $request->input('latitude'),
-            $request->input('longitude')
-        );
+        // Validate the incoming request
+        $validated = $request->validate([
+            'recipient_name' => 'required|string',
+            'recipient_phone' => 'required|string',
+            'address' => 'required|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'amount' => 'required|numeric',
+            'description' => 'required|string|max:200',
+        ]);
 
+        // Create recipient
         $recipient = new Contact(
-            $request->input('name'),
-            $request->input('phone'),
-            $location
+            $validated['recipient_name'],
+            $validated['recipient_phone'],
+            new Location(
+                $validated['address'],
+                $validated['latitude'],
+                $validated['longitude']
+            )
         );
 
+        // Create order request
         $orderRequest = new CreateOrderRequest(
             $recipient,
-            $request->input('amount'),
-            $request->input('description')
+            $validated['amount'],
+            $validated['description']
         );
 
-        // Set sender or client vendor ID
-        $orderRequest->setClientVendorId($request->input('outlet_id'));
+        // Set client vendor ID for the outlet
+        $orderRequest->setClientVendorId(config('services.pandago.outlet_id'));
 
         try {
+            // Create the order
             $order = Pandago::orders()->create($orderRequest);
 
+            // Return success response
             return response()->json([
+                'success' => true,
+                'message' => 'Delivery order created successfully',
                 'order_id' => $order->getOrderId(),
                 'status' => $order->getStatus(),
+                'tracking_link' => $order->getTrackingLink(),
             ]);
         } catch (\Exception $e) {
+            // Log the error
+            \Log::error('Pandago order creation failed: ' . $e->getMessage());
+
+            // Return error response
             return response()->json([
+                'success' => false,
+                'message' => 'Failed to create delivery order',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -182,113 +217,160 @@ class OrderController extends Controller
 }
 ```
 
-## Advanced Usage
+## API Reference
 
-### Orders
+### Order Operations
 
 #### Create an Order
 
 ```php
+// Create an order
 $order = $client->orders()->create($createOrderRequest);
 ```
 
-#### Get an Order
+#### Get Order Details
 
 ```php
+// Get order details
 $order = $client->orders()->get($orderId);
+
+// Access order properties
+echo "Order ID: " . $order->getOrderId() . "\n";
+echo "Client Order ID: " . $order->getClientOrderId() . "\n";
+echo "Status: " . $order->getStatus() . "\n";
+echo "Amount: RM" . $order->getAmount() . "\n";
+echo "Delivery Fee: RM" . $order->getDeliveryFee() . "\n";
+echo "Created At: " . date('Y-m-d H:i:s', $order->getCreatedAt()) . "\n";
 ```
 
 #### Update an Order
 
 ```php
+// Create update request
 $updateRequest = new UpdateOrderRequest();
-$updateRequest->setAmount(25.0);
-$updateRequest->setDescription('Updated description');
 
-$order = $client->orders()->update($orderId, $updateRequest);
+// Set fields to update
+$updateRequest->setAmount(42.50);
+$updateRequest->setDescription('Updated order: ');
+
+// Update the order
+$updatedOrder = $client->orders()->update($orderId, $updateRequest);
 ```
 
 #### Cancel an Order
 
 ```php
+// Create cancel request with reason
 $cancelRequest = new CancelOrderRequest('MISTAKE_ERROR');
+// Available reasons: DELIVERY_ETA_TOO_LONG, MISTAKE_ERROR, REASON_UNKNOWN
+
+// Cancel the order
 $success = $client->orders()->cancel($orderId, $cancelRequest);
+
+if ($success) {
+    echo "Order cancelled successfully\n";
+}
 ```
 
-#### Get Courier Coordinates
+#### Track Courier Location
 
 ```php
+// Get real-time courier coordinates
 $coordinates = $client->orders()->getCoordinates($orderId);
-echo "Latitude: " . $coordinates->getLatitude() . "\n";
-echo "Longitude: " . $coordinates->getLongitude() . "\n";
+echo "Courier is at: " . $coordinates->getLatitude() . ", " . $coordinates->getLongitude() . "\n";
+echo "Last updated: " . date('Y-m-d H:i:s', $coordinates->getUpdatedAt()) . "\n";
 ```
 
-#### Proof of Delivery and Pickup
+#### Get Delivery Proofs
 
 ```php
-// Get proof of delivery
-$base64Image = $client->orders()->getProofOfDelivery($orderId);
+// Get proof of delivery (Base64 encoded image)
+$deliveryProof = $client->orders()->getProofOfDelivery($orderId);
 
-// Get proof of pickup
-$base64Image = $client->orders()->getProofOfPickup($orderId);
+// Get proof of pickup (Base64 encoded image)
+$pickupProof = $client->orders()->getProofOfPickup($orderId);
 
-// Get proof of return
-$base64Image = $client->orders()->getProofOfReturn($orderId);
+// Get proof of return (Base64 encoded image) - if order was returned
+$returnProof = $client->orders()->getProofOfReturn($orderId);
+
+// Example: Save proof of delivery as image
+file_put_contents('delivery-proof.jpg', base64_decode($deliveryProof));
 ```
 
 #### Estimate Delivery Fee and Time
 
 ```php
-// Estimate delivery fee
-$fee = $client->orders()->estimateFee($createOrderRequest);
-echo "Estimated Fee: " . $fee['estimated_delivery_fee'] . "\n";
+// Estimate delivery fee before creating order
+$feeEstimate = $client->orders()->estimateFee($createOrderRequest);
+echo "Estimated Delivery Fee: RM" . $feeEstimate['estimated_delivery_fee'] . "\n";
 
 // Estimate delivery time
-$time = $client->orders()->estimateTime($createOrderRequest);
-echo "Estimated Pickup: " . $time['estimated_pickup_time'] . "\n";
-echo "Estimated Delivery: " . $time['estimated_delivery_time'] . "\n";
+$timeEstimate = $client->orders()->estimateTime($createOrderRequest);
+echo "Estimated Pickup Time: " . $timeEstimate['estimated_pickup_time'] . "\n";
+echo "Estimated Delivery Time: " . $timeEstimate['estimated_delivery_time'] . "\n";
 ```
 
-### Outlets
+### Outlet Management
 
-#### Get an Outlet
+#### Get Outlet Details
 
 ```php
+// Retrieve outlet by client vendor ID
 $outlet = $client->outlets()->get($clientVendorId);
+
+echo "Outlet Name: " . $outlet->getName() . "\n";
+echo "Address: " . $outlet->getAddress() . "\n";
+echo "City: " . $outlet->getCity() . "\n";
+echo "Phone: " . $outlet->getPhoneNumber() . "\n";
 ```
 
 #### Create or Update an Outlet
 
 ```php
-$outlet = new Outlet();
-$outlet->setName('Trilobyte');
-$outlet->setAddress('1st Floor, No 8, Jalan Laguna 1');
-$outlet->setLatitude(5.3731476);
-$outlet->setLongitude(100.4068053);
-$outlet->setCity('Prai');
-$outlet->setPhoneNumber('+601110550716');
-$outlet->setCurrency('MYR');
-$outlet->setLocale('en-MY');
-$outlet->setDescription('My store description');
+// Create outlet request
+$request = new CreateOutletRequest(
+    'Trilobyte',                                 // Name
+    '1st Floor, No 8',                           // Address
+    5.3731476,                                   // Latitude
+    100.4068053,                                 // Longitude
+    'Kuala Lumpur',                              // City
+    '+601110550716',                             // Phone number
+    'MYR',                                       // Currency
+    'ms-MY',                                     // Locale
+    'Authentic Malaysian cuisine since 1988'     // Description (optional)
+);
 
+// Set additional outlet details (all optional)
+$request->setStreet('Jalan Laguna 1');
+$request->setStreetNumber('1');
+$request->setPostalCode('13700');
+$request->setRiderInstructions('Masuk melalui pintu belakang, parkir di lot A');
+$request->setHalal(true);
 
-$createdOutlet = $client->outlets()->createOrUpdate($clientVendorId, $outlet);
+// Add users who can manage this outlet
+$request->setAddUsers(['user1@example.com', 'user2@example.com']);
+
+// Create or update the outlet
+$outlet = $client->outlets()->createOrUpdate($clientVendorId, $request);
 ```
 
 #### Get All Outlets
 
 ```php
-$outlets = $client->outlets()->all();
+// Retrieve all outlets for your account
+$outlets = $client->outlets()->getAll();
+
 foreach ($outlets as $outlet) {
-    echo $outlet->getName() . "\n";
+    echo "Outlet ID: " . $outlet->getClientVendorId() . "\n";
+    echo "Name: " . $outlet->getName() . "\n";
+    echo "Address: " . $outlet->getAddress() . "\n";
+    echo "-----------------------------------\n";
 }
 ```
 
-### Error Handling
+## Error Handling
 
-The library provides enhanced error handling with detailed, context-rich error messages and helpful suggestions.
-
-#### Basic Error Handling
+The library provides comprehensive error handling with context-aware error messages and helpful suggestions.
 
 ```php
 use Nava\Pandago\Exceptions\ValidationException;
@@ -298,36 +380,42 @@ use Nava\Pandago\Exceptions\PandagoException;
 use Nava\Pandago\Util\ErrorHandler;
 
 try {
-    $result = $client->orders()->create($request);
+    $order = $client->orders()->create($request);
 } catch (ValidationException $e) {
-    // Handle validation errors
+    // Handle validation errors (e.g., invalid parameters)
+    echo "Validation error: " . $e->getMessage() . "\n";
+
     $errors = $e->getErrors();
     foreach ($errors as $field => $message) {
-        echo "Error with {$field}: {$message}\n";
+        echo "- $field: $message\n";
     }
 } catch (AuthenticationException $e) {
-    // Handle authentication errors
-    echo "Authentication failed: " . $e->getMessage() . "\n";
+    // Handle authentication errors (e.g., invalid credentials, expired token)
+    echo "Authentication error: " . $e->getMessage() . "\n";
+    echo "Please check your client ID, key ID, and private key.\n";
 } catch (RequestException $e) {
-    // Get detailed error information with helpful suggestions
-    echo ErrorHandler::getDetailedErrorMessage($e);
+    // Handle API request errors (e.g., 400, 404, 500 responses)
 
-    // Or access specific error components
+    // Get a detailed error message with contextual information
+    echo ErrorHandler::getDetailedErrorMessage($e) . "\n";
+
+    // Access error details individually
     echo "Status code: " . $e->getCode() . "\n";
-    echo "Method: " . $e->getMethod() . "\n";
-    echo "Endpoint: " . $e->getEndpoint() . "\n";
+    echo "Error message: " . $e->getMessage() . "\n";
+    echo "Endpoint: " . $e->getMethod() . " " . $e->getEndpoint() . "\n";
 
-    // Get a friendly message with guidance based on the error
-    echo $e->getFriendlyMessage() . "\n";
+    // Use the friendly message which includes helpful suggestions
+    echo "Friendly message: " . $e->getFriendlyMessage() . "\n";
 } catch (PandagoException $e) {
-    // Handle other pandago errors
+    // Handle any other pandago-specific errors
     echo "Pandago error: " . $e->getMessage() . "\n";
+} catch (\Exception $e) {
+    // Handle any other unexpected errors
+    echo "Unexpected error: " . $e->getMessage() . "\n";
 }
 ```
 
-#### Error Types and Suggestions
-
-The `ErrorHandler` utility provides specific suggestions for different error types:
+The error handler provides specific suggestions based on error type:
 
 | Error Type           | Example Suggestion                                                                    |
 | -------------------- | ------------------------------------------------------------------------------------- |
@@ -337,82 +425,55 @@ The `ErrorHandler` utility provides specific suggestions for different error typ
 | Rate Limiting (429)  | "You've exceeded the rate limit. Please reduce the frequency of your requests."       |
 | Server Error (500)   | "The pandago API is experiencing issues. Please try again later."                     |
 
-The library also recognizes common error patterns, such as "outlet not found" or "order is not cancellable" and provides specific guidance for these cases.
-
-#### Laravel Integration
-
-With Laravel integration, you can enhance error responses:
-
-```php
-try {
-    $order = Pandago::orders()->get($orderId);
-    return response()->json(['order' => $order]);
-} catch (RequestException $e) {
-    // Log the detailed error
-    \Log::error(ErrorHandler::getDetailedErrorMessage($e));
-
-    // Return a user-friendly error message
-    return response()->json([
-        'error' => $e->getFriendlyMessage()
-    ], $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500);
-}
-```
-
 ## Configuration Options
 
-When creating a client via the factory method, you can pass additional options:
+### Client Initialization
+
+You can create a client using the factory method with various options:
 
 ```php
+// Using the make method
 $client = Client::make(
-    'pandago:my:00000000-0000-0000-0000-000000000000', // ClientID
-    '00000000-0000-0000-0000-000000000001',             // KeyID
-    'pandago.api.my.*',                                 // Scope
-    file_get_contents('path/to/client.pem'),            // Private Key
-    'my',                                               // Country
-    'sandbox',                                          // Environment
-    30,                                                 // Timeout in seconds
-    $logger                                             // PSR-3 Logger instance
+    'pandago:my:00000000-0000-0000-0000-000000000000', // Client ID
+    '00000000-0000-0000-0000-000000000001',            // Key ID
+    'pandago.api.my.*',                                // Scope
+    file_get_contents('path/to/private-key.pem'),      // Private Key
+    'my',                                              // Country code
+    'sandbox',                                         // Environment
+    30,                                                // Timeout in seconds
+    $logger                                            // PSR-3 Logger instance (optional)
 );
-```
 
-Or use the array-based configuration:
-
-```php
+// Alternatively, using array-based configuration
 $client = Client::fromArray([
-    'client_id' => 'pandago:my:00000000-0000-0000-0000-000000000000',
-    'key_id' => '00000000-0000-0000-0000-000000000001',
-    'scope' => 'pandago.api.my.*',
-    'private_key' => file_get_contents('path/to/client.pem'),
-    'country' => 'my',
+    'client_id'   => 'pandago:my:00000000-0000-0000-0000-000000000000',
+    'key_id'      => '00000000-0000-0000-0000-000000000001',
+    'scope'       => 'pandago.api.my.*',
+    'private_key' => file_get_contents('path/to/private-key.pem'),
+    'country'     => 'my',
     'environment' => 'sandbox',
-    'timeout' => 30
+    'timeout'     => 30
 ], $logger);
 ```
 
-## Supported Countries
+### Supported Countries
 
 The library supports multiple countries:
 
--   Singapore (sg)
--   Hong Kong (hk)
--   Malaysia (my)
--   Thailand (th)
--   Philippines (ph)
--   Taiwan (tw)
--   Pakistan (pk)
--   Jordan (jo)
--   Finland (fi)
--   Kuwait (kw)
--   Norway (no)
--   Sweden (se)
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/awesome-feature`)
-3. Commit your changes (`git commit -m 'Add awesome feature'`)
-4. Push to the branch (`git push origin feature/awesome-feature`)
-5. Create a Pull Request
+| Country Code | Country Name |
+| ------------ | ------------ |
+| sg           | Singapore    |
+| hk           | Hong Kong    |
+| my           | Malaysia     |
+| th           | Thailand     |
+| ph           | Philippines  |
+| tw           | Taiwan       |
+| pk           | Pakistan     |
+| jo           | Jordan       |
+| fi           | Finland      |
+| kw           | Kuwait       |
+| no           | Norway       |
+| se           | Sweden       |
 
 ## Testing
 
@@ -433,6 +494,14 @@ Format code:
 ```bash
 composer cs-fix
 ```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/awesome-feature`)
+3. Commit your changes (`git commit -m 'Add awesome feature'`)
+4. Push to the branch (`git push origin feature/awesome-feature`)
+5. Create a Pull Request
 
 ## Security
 

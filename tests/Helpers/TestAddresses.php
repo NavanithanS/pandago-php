@@ -16,8 +16,8 @@ class TestAddresses
     // Garrett Popcorn Shops (Sender/Outlet)
     const OUTLET_NAME         = 'Garrett Popcorn Shops';
     const OUTLET_ADDRESS      = '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872';
-    const OUTLET_LATITUDE     = 1.3018914131301271;
-    const OUTLET_LONGITUDE    = 103.83548392113393;
+    const OUTLET_LATITUDE     = 1.303768190090923;
+    const OUTLET_LONGITUDE    = 103.83334762156251;
     const OUTLET_PHONE        = '+6567379388';
     const OUTLET_CONTACT_NAME = 'Chalit';
     const OUTLET_CITY         = 'Singapore';
