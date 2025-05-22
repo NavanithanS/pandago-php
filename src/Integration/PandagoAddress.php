@@ -12,6 +12,18 @@ use Nava\Pandago\Models\Outlet\CreateOutletRequest;
 class PandagoAddress
 {
 
+    // Garrett Popcorn Shops (Sender/Outlet)
+    const OUTLET_NAME         = 'Garrett Popcorn Shops';
+    const OUTLET_ADDRESS      = '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872';
+    const OUTLET_LATITUDE     = 1.303768190090923;
+    const OUTLET_LONGITUDE    = 103.83334762156251;
+    const OUTLET_PHONE        = '+6567379388';
+    const OUTLET_CONTACT_NAME = 'Chalit';
+    const OUTLET_CITY         = 'Singapore';
+    const OUTLET_CURRENCY     = 'SGD';
+    const OUTLET_LOCALE       = 'en-SG';
+    const OUTLET_DESCRIPTION  = 'Garrett Popcorn Shops at Takashimaya Shopping Centre';
+
     public static function prepareData($data)
     {
         // \Log::info('Data: '. print_r($data, true));
@@ -34,21 +46,6 @@ class PandagoAddress
             }
             $output['subtotal'] = isset($data['subtotal']) ? $data['subtotal'] : null;
         }
-        // } elseif ($data instanceof ShopOrder) {
-        //     $unit = isset($data->content['address']['unit']) ? $data->content['address']['unit'] . " " : null;
-        //     $address = isset($data->content['address']['address']) ? $data->content['address']['address'] : null;
-        //     $address2 = isset($data->content['address']['address2']) ? " " . $data->content['address']['address2'] : null;
-        //     $output['address'] = $unit . "" . $address . "" . $address2;
-        //     $output['postcode'] = isset($data->content['address']['postcode']) ? $data->content['address']['postcode'] : null;
-        //     $output['name'] = isset($data->content['address']['name']) ? $data->content['address']['name'] : null;
-        //     $output['phone'] = isset($data->content['address']['phone']) ? $data->content['address']['phone'] : null;
-        //     $output['store_id'] = isset($data->content['shipping_store']) ? $data->content['shipping_store'] : null;
-        //     $output['lat'] = isset($data->content['address']['lat']) ? $data->content['address']['lat'] : null;
-        //     $output['lng'] = isset($data->content['address']['lng']) ? $data->content['address']['lng'] : null;
-        //     $output['dateTime'] = Carbon::parse($data->content['shipping_date'] . ' ' . $data->content['shipping_time']);
-        //     $output['subtotal'] = isset($data->subtotal) ? $data->subtotal : null;
-        // }
-        // \Log::info('Output: '. print_r($output, true));
 
         return $output;
     }
@@ -61,9 +58,12 @@ class PandagoAddress
     public static function getOutletLocation($store = null): Location
     {
         return new Location(
-            $store->address,
-            $store->lat,
-            $store->lng,
+            self::OUTLET_ADDRESS,
+            self::OUTLET_LATITUDE,
+            self::OUTLET_LONGITUDE,
+            // $store->address,
+            // $store->lat,
+            // $store->lng,
         );
     }
 
@@ -75,11 +75,12 @@ class PandagoAddress
      */
     public static function getOutletContact(?Store $store = null, ?string $notes = null): Contact
     {
-        // \Log::info('Store: '. print_r(json_decode($store), true));
         return new Contact(
-            $store->title,
-            $store->contact,
-            self::getOutletLocation($store),
+            // $store->title,
+            // $store->contact,
+            self::OUTLET_CONTACT_NAME,
+            self::OUTLET_PHONE,
+            self::getOutletLocation(),
             $notes ?? 'Use the food hall entrance at B2'
         );
     }
