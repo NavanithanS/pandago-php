@@ -7,6 +7,7 @@ use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\PandagoClient;
 use Nava\Pandago\Tests\Helpers\TestAddresses;
 use Nava\Pandago\Tests\TestCase;
 use Nava\Pandago\Tests\Util\MockCallbackServer;
@@ -27,6 +28,21 @@ class OrderCancellation
      * @var string|null
      */
     protected $orderId;
+
+    public function __construct()
+    {
+        $clientId = env('PANDAGO_CLIENT_ID');
+        $keyId = env('PANDAGO_KEY_ID');
+        $scope = env('PANDAGO_SCOPE');
+        $privateKey = env('PANDAGO_PRIVATE_KEY');
+        $country = env('PANDAGO_COUNTRY');
+        $environment = env('PANDAGO_ENVIRONMENT');
+        $timeout = env('PANDAGO_TIMEOUT');
+
+        $this->config = new Config($clientId, $keyId, $scope, $privateKey, $country, $environment, $timeout);
+        $this->client = new PandagoClient($this->config);       
+    }
+
 
     public function cancelOrder(Order $order)
     {   
@@ -53,19 +69,19 @@ class OrderCancellation
 
             $result = $this->client->orders()->cancel($order->getOrderId(), $cancelRequest);
 
-            $this->assertTrue($result);
+            // $this->assertTrue($result);
             // Order is cancelled, no need to clean up
             $this->orderId = null;
 
             $cancelledOrder = $this->client->orders()->get($order->getOrderId());
-            $this->assertEquals('CANCELLED', $cancelledOrder->getStatus());
+            // $this->assertEquals('CANCELLED', $cancelledOrder->getStatus());
 
             return $result;
 
         } catch (RequestException $e) {
             // The order might be in a state that can't be cancelled
             if ($e->getCode() === 409 && strpos($e->getMessage(), 'Order is not cancellable') !== false) {
-                $this->markTestSkipped('Order is not cancellable - it may have progressed too far');
+                throw('Order is not cancellable - it may have progressed too far');
             } else {
                 throw $e;
             }

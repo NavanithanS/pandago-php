@@ -73,7 +73,7 @@ class PandagoAddress
      * @param string|null $notes Optional notes for delivery instructions
      * @return Contact
      */
-    public static function getOutletContact(?Store $store = null, ?string $notes = null): Contact
+    public static function getOutletContact($store = null, ?string $notes = null): Contact
     {
         return new Contact(
             // $store->title,

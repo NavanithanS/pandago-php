@@ -26,7 +26,21 @@ class OrderCreate
      */
     protected $orderId;
 
-        public function createOrder(Request $request)
+    public function __construct()
+    {
+        $clientId = env('PANDAGO_CLIENT_ID');
+        $keyId = env('PANDAGO_KEY_ID');
+        $scope = env('PANDAGO_SCOPE');
+        $privateKey = env('PANDAGO_PRIVATE_KEY');
+        $country = env('PANDAGO_COUNTRY');
+        $environment = env('PANDAGO_ENVIRONMENT');
+        $timeout = env('PANDAGO_TIMEOUT');
+
+        $this->config = new Config($clientId, $keyId, $scope, $privateKey, $country, $environment, $timeout);
+        $this->client = new PandagoClient($this->config);       
+    }
+
+    public function createOrder(Request $request)
     {
         $data = PandagoAddress::prepareData($request);
 
@@ -45,9 +59,9 @@ class OrderCreate
         $orderRequest->setClientOrderId($clientOrderId);
 
         //set sender 
-        $store = Store::find($data['store_id']);
+        // $store = Store::find($data['store_id']);
         // \Log::info('Store: ' . $store->postcode);
-        $sender = PandagoAddress::getOutletContact($store);
+        $sender = PandagoAddress::getOutletContact();
         $orderRequest->setSender($sender);
         $orderRequest->setPaymentMethod('PAID');
         $orderRequest->setColdbagNeeded(true);
@@ -82,46 +96,45 @@ class OrderCreate
             $orderArray = $order->toArray();
 
             // Verify basic order details
-            $this->assertNotEmpty($order->getOrderId(), 'Order ID should not be empty');
-            $this->assertEquals($clientOrderId, $order->getClientOrderId(), 'Client Order ID should match');
+            // $this->assertNotEmpty($order->getOrderId(), 'Order ID should not be empty');
+            // $this->assertEquals($clientOrderId, $order->getClientOrderId(), 'Client Order ID should match');
 
-            // Verify expected status (typically 'NEW' for a newly created order)
-            $this->assertEquals('NEW', $order->getStatus(), 'Order status should be NEW');
+            // // Verify expected status (typically 'NEW' for a newly created order)
+            // $this->assertEquals('NEW', $order->getStatus(), 'Order status should be NEW');
 
-            // Verify amount
-            $this->assertEquals($data['subtotal'], $order->getAmount(), 'Order amount should match');
+            // // Verify amount
+            // $this->assertEquals($data['subtotal'], $order->getAmount(), 'Order amount should match');
 
-            // Verify cold bag setting
-            $this->assertTrue($order->isColdbagNeeded(), 'Cold bag needed should be true');
+            // // Verify cold bag setting
+            // $this->assertTrue($order->isColdbagNeeded(), 'Cold bag needed should be true');
 
-            // Verify description
-            $this->assertEquals('Creating Order', $order->getDescription(), 'Description should match');
+            // // Verify description
+            // $this->assertEquals('Creating Order', $order->getDescription(), 'Description should match');
 
             // Verify recipient details using TestAddresses constants
             $orderRecipient = $order->getRecipient();
-            $this->assertInstanceOf(Contact::class, $orderRecipient);
+            // $this->assertInstanceOf(Contact::class, $orderRecipient);
 
             //TO DO: NOT SURE 
-            $this->assertEquals($recipient->name, $orderRecipient->getName(), 'Recipient name should match');
-            $this->assertEquals($recipient->phoneNumber, $orderRecipient->getPhoneNumber(), 'Recipient phone should match');
+            // $this->assertEquals($recipient->name, $orderRecipient->getName(), 'Recipient name should match');
+            // $this->assertEquals($recipient->phoneNumber, $orderRecipient->getPhoneNumber(), 'Recipient phone should match');
 
             // Verify recipient location
             $recipientLocation = $orderRecipient->getLocation();
-            $this->assertInstanceOf(Location::class, $recipientLocation);
+            // $this->assertInstanceOf(Location::class, $recipientLocation);
 
             //TO DO: NOT SURE 
-            $this->assertEquals($sender->address, $recipientLocation->getAddress(), 'Recipient address should match');
+            // $this->assertEquals($sender->address, $recipientLocation->getAddress(), 'Recipient address should match');
 
             try {
                 $retrievedOrder = $this->client->orders()->get($order->getOrderId());
 
                 // Verify retrieved order matches the created one
-                $this->assertEquals($order->getOrderId(), $retrievedOrder->getOrderId(), 'Order IDs should match');
-                $this->assertEquals($order->getClientOrderId(), $retrievedOrder->getClientOrderId(), 'Client Order IDs should match');
+                // $this->assertEquals($order->getOrderId(), $retrievedOrder->getOrderId(), 'Order IDs should match');
+                // $this->assertEquals($order->getClientOrderId(), $retrievedOrder->getClientOrderId(), 'Client Order IDs should match');
 
             } catch (RequestException $e) {
-                echo "Could not retrieve the created order, but this doesn't mean it wasn't created:\n";
-                echo "• Error: " . $e->getMessage() . "\n";
+                throw($e->getMessage());
             }
 
             return $order;
@@ -129,9 +142,9 @@ class OrderCreate
         } catch (RequestException $e) {
             // Handle common integration test failures
             if ($e->getCode() === 404 && strpos($e->getMessage(), 'Outlet not found') !== false) {
-                $this->markTestSkipped('Integration test failed: Outlet not found. Please configure a valid client vendor ID.');
+                throw('Integration test failed: Outlet not found. Please configure a valid client vendor ID.');
             } elseif ($e->getCode() === 422 && strpos($e->getMessage(), 'No Branch found') !== false) {
-                $this->markTestSkipped('Integration test failed: No branch found that is close enough to the given sender coordinates.');
+                throw('Integration test failed: No branch found that is close enough to the given sender coordinates.');
             } else {
                 throw $e;
             }

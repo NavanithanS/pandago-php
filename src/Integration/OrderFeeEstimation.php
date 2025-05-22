@@ -8,6 +8,7 @@ use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\PandagoClient;
 
 class OrderFeeEstimation 
 {
@@ -25,6 +26,20 @@ class OrderFeeEstimation
      * @var string|null
      */
     protected $orderId;
+
+    public function __construct()
+    {
+        $clientId = env('PANDAGO_CLIENT_ID');
+        $keyId = env('PANDAGO_KEY_ID');
+        $scope = env('PANDAGO_SCOPE');
+        $privateKey = env('PANDAGO_PRIVATE_KEY');
+        $country = env('PANDAGO_COUNTRY');
+        $environment = env('PANDAGO_ENVIRONMENT');
+        $timeout = env('PANDAGO_TIMEOUT');
+
+        $this->config = new Config($clientId, $keyId, $scope, $privateKey, $country, $environment, $timeout);
+        $this->client = new PandagoClient($this->config);       
+    }
 
     public function getEstimateFee(Request $request)
     {
@@ -48,8 +63,8 @@ class OrderFeeEstimation
         $orderRequest->setClientOrderId($clientOrderId);
 
         //set sender 
-        $store = Store::find($data['store_id']);
-        $sender = PandagoAddress::getOutletContact($store);
+        // $store = Store::find($data['store_id']);
+        $sender = PandagoAddress::getOutletContact();
         $orderRequest->setSender($sender);
 
         //can print the payload 
@@ -74,17 +89,17 @@ class OrderFeeEstimation
         try{
             $result = $this->client->orders()->estimateFee($orderRequest);
             
-            $this->assertIsArray($result);
-            $this->assertArrayHasKey('estimated_delivery_fee', $result);
+            // $this->assertIsArray($result);
+            // $this->assertArrayHasKey('estimated_delivery_fee', $result);
 
-            $this->assertIsNumeric($result['estimated_delivery_fee']);
-            $this->assertGreaterThan(0, $result['estimated_delivery_fee']);
+            // $this->assertIsNumeric($result['estimated_delivery_fee']);
+            // $this->assertGreaterThan(0, $result['estimated_delivery_fee']);
             
-            // Check if client order ID is included in response
-            if (isset($result['client_order_id'])) {
-                // Verify it matches what we sent
-                $this->assertEquals($clientOrderId, $result['client_order_id']);
-            }
+            // // Check if client order ID is included in response
+            // if (isset($result['client_order_id'])) {
+            //     // Verify it matches what we sent
+            //     $this->assertEquals($clientOrderId, $result['client_order_id']);
+            // }
 
             // Calculate distance between sender and recipient using TestAddresses
             // $distance = PandagoAddress::getApproximateDistance();
