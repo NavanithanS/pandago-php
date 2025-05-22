@@ -1,5 +1,5 @@
 <?php
-namespace Nava\Pandago\Integration;
+namespace Nava\Pandago;
 
 use App\ShopOrder;
 use App\Store;

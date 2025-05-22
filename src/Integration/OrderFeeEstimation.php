@@ -8,6 +8,7 @@ use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\PandagoAddress;
 use Nava\Pandago\PandagoClient;
 
 class OrderFeeEstimation 
