@@ -10,6 +10,7 @@ use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
 use Nava\Pandago\PandagoAddress;
 use Nava\Pandago\PandagoClient;
+use Log;
 
 class OrderFeeEstimation 
 {
@@ -33,7 +34,7 @@ class OrderFeeEstimation
         $clientId = env('PANDAGO_CLIENT_ID');
         $keyId = env('PANDAGO_KEY_ID');
         $scope = env('PANDAGO_SCOPE');
-        $privateKey = env('PANDAGO_PRIVATE_KEY');
+        $privateKey =  file_get_contents(env('PANDAGO_PRIVATE_KEY'));
         $country = env('PANDAGO_COUNTRY');
         $environment = env('PANDAGO_ENVIRONMENT');
         $timeout = env('PANDAGO_TIMEOUT');
@@ -44,11 +45,8 @@ class OrderFeeEstimation
 
     public function getEstimateFee(Request $request)
     {
-        // \Log::info('Request: '. print_r($request->all(), true));
 
         $data = PandagoAddress::prepareData($request->all());
-
-        // \Log::info('Data: '. print_r($data, true));
 
         //recipient details
         $recipient = PandagoAddress::getCustomerContact($data);
@@ -64,7 +62,6 @@ class OrderFeeEstimation
         $orderRequest->setClientOrderId($clientOrderId);
 
         //set sender 
-        // $store = Store::find($data['store_id']);
         $sender = PandagoAddress::getOutletContact();
         $orderRequest->setSender($sender);
 
@@ -108,7 +105,7 @@ class OrderFeeEstimation
             return $result;
             
         }catch (RequestException $e){
-            $this->markTestSkipped('Fee estimation failed: ' . $e->getMessage());
+            Log::info('Fee estimation failed: ' . $e->getMessage());
         }
     }
     

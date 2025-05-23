@@ -8,6 +8,9 @@ use Nava\Pandago\Exceptions\RequestException;
 use Nava\Pandago\Models\Order\CancelOrderRequest;
 use Nava\Pandago\Models\Order\CreateOrderRequest;
 use Nava\Pandago\Models\Order\Order;
+use Nava\Pandago\PandagoAddress;
+use Nava\Pandago\PandagoClient;
+use Log;
 
 class OrderCreate 
 {
@@ -40,15 +43,16 @@ class OrderCreate
         $this->client = new PandagoClient($this->config);       
     }
 
-    public function createOrder(Request $request)
+    public function createOrder($request)
     {
-        $data = PandagoAddress::prepareData($request);
-
+        
+        $data = PandagoAddress::prepareCreateOrderData($request);
+        
         // Create recipient
         $recipient = PandagoAddress::getCustomerContact($data);
 
         // Create order request with a client order ID for tracing
-        $clientOrderId = PandagoAddress::generateClientOrderId('create');
+        $clientOrderId = $data['refno'];
 
         $orderRequest = new CreateOrderRequest(
             $recipient,
@@ -56,11 +60,10 @@ class OrderCreate
             'Creating Order',
         );
 
+
         $orderRequest->setClientOrderId($clientOrderId);
 
         //set sender 
-        // $store = Store::find($data['store_id']);
-        // \Log::info('Store: ' . $store->postcode);
         $sender = PandagoAddress::getOutletContact();
         $orderRequest->setSender($sender);
         $orderRequest->setPaymentMethod('PAID');
@@ -68,6 +71,8 @@ class OrderCreate
 
         //for print to check the data
         $requestOrderPayload = $orderRequest->toArray();
+
+        // Log::info(print_r($requestOrderPayload, true));
 
         // Define and display the full URL based on environment
         $environment = $this->config->getEnvironment();
@@ -126,25 +131,24 @@ class OrderCreate
             //TO DO: NOT SURE 
             // $this->assertEquals($sender->address, $recipientLocation->getAddress(), 'Recipient address should match');
 
-            try {
-                $retrievedOrder = $this->client->orders()->get($order->getOrderId());
+            // try {
+            //     $retrievedOrder = $this->client->orders()->get($order->getOrderId());
 
-                // Verify retrieved order matches the created one
-                // $this->assertEquals($order->getOrderId(), $retrievedOrder->getOrderId(), 'Order IDs should match');
-                // $this->assertEquals($order->getClientOrderId(), $retrievedOrder->getClientOrderId(), 'Client Order IDs should match');
+            //     // Verify retrieved order matches the created one
+            //     // $this->assertEquals($order->getOrderId(), $retrievedOrder->getOrderId(), 'Order IDs should match');
+            //     // $this->assertEquals($order->getClientOrderId(), $retrievedOrder->getClientOrderId(), 'Client Order IDs should match');
 
-            } catch (RequestException $e) {
-                throw($e->getMessage());
-            }
-
-            return $order;
+            // } catch (RequestException $e) {
+            //     Log::info($e->getMessage());
+            // }
+            return $orderArray;
 
         } catch (RequestException $e) {
             // Handle common integration test failures
             if ($e->getCode() === 404 && strpos($e->getMessage(), 'Outlet not found') !== false) {
-                throw('Integration test failed: Outlet not found. Please configure a valid client vendor ID.');
+                Log::info('Integration test failed: Outlet not found. Please configure a valid client vendor ID.');
             } elseif ($e->getCode() === 422 && strpos($e->getMessage(), 'No Branch found') !== false) {
-                throw('Integration test failed: No branch found that is close enough to the given sender coordinates.');
+                Log::info('Integration test failed: No branch found that is close enough to the given sender coordinates.');
             } else {
                 throw $e;
             }
