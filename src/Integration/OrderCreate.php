@@ -43,7 +43,7 @@ class OrderCreate
         $this->client = new PandagoClient($this->config);       
     }
 
-    public function createOrder($request)
+    public function createOrder($request, $store)
     {
         
         $data = PandagoAddress::prepareCreateOrderData($request);
@@ -64,7 +64,7 @@ class OrderCreate
         $orderRequest->setClientOrderId($clientOrderId);
 
         //set sender 
-        $sender = PandagoAddress::getOutletContact();
+        $sender = PandagoAddress::getOutletContact($store);
         $orderRequest->setSender($sender);
         $orderRequest->setPaymentMethod('PAID');
         $orderRequest->setColdbagNeeded(true);

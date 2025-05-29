@@ -84,8 +84,6 @@ class PandagoAddress
     public static function getOutletContact($store = null, ?string $notes = null): Contact
     {
         return new Contact(
-            // $store->title,
-            // $store->contact,
             $store['title'],
             $store['contact'],
             self::getOutletLocation($store),
