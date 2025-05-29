@@ -665,6 +665,10 @@ class Order
             $data['client_order_id'] = $this->clientOrderId;
         }
 
+        if (null !== $this->orderId) {
+            $data['order_id'] = $this->orderId;
+        }
+
         // Handle sender information
         if (null !== $this->sender) {
             $data['sender'] = $this->sender->toArray();
@@ -708,6 +712,10 @@ class Order
 
         if (null !== $this->preorderedFor) {
             $data['preordered_for'] = $this->preorderedFor;
+        }
+
+        if (null !== $this->trackingLink) {
+            $data['trackingLink'] = $this->trackingLink;
         }
 
         return $data;
