@@ -34,7 +34,7 @@ class OrderCancellation
         $clientId = env('PANDAGO_CLIENT_ID');
         $keyId = env('PANDAGO_KEY_ID');
         $scope = env('PANDAGO_SCOPE');
-        $privateKey =  file_get_contents(env('PANDAGO_PRIVATE_KEY'));
+        $privateKey =  file_get_contents(storage_path(env('PANDAGO_PRIVATE_KEY')));
         $country = env('PANDAGO_COUNTRY');
         $environment = env('PANDAGO_ENVIRONMENT');
         $timeout = env('PANDAGO_TIMEOUT');
