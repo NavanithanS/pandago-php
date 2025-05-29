@@ -34,7 +34,7 @@ class OrderCreate
         $clientId = env('PANDAGO_CLIENT_ID');
         $keyId = env('PANDAGO_KEY_ID');
         $scope = env('PANDAGO_SCOPE');
-        $privateKey = env('PANDAGO_PRIVATE_KEY');
+        $privateKey =  file_get_contents(env('PANDAGO_PRIVATE_KEY'));
         $country = env('PANDAGO_COUNTRY');
         $environment = env('PANDAGO_ENVIRONMENT');
         $timeout = env('PANDAGO_TIMEOUT');
@@ -99,48 +99,14 @@ class OrderCreate
 
             //Display additional order details
             $orderArray = $order->toArray();
-
-            // Verify basic order details
-            // $this->assertNotEmpty($order->getOrderId(), 'Order ID should not be empty');
-            // $this->assertEquals($clientOrderId, $order->getClientOrderId(), 'Client Order ID should match');
-
-            // // Verify expected status (typically 'NEW' for a newly created order)
-            // $this->assertEquals('NEW', $order->getStatus(), 'Order status should be NEW');
-
-            // // Verify amount
-            // $this->assertEquals($data['subtotal'], $order->getAmount(), 'Order amount should match');
-
-            // // Verify cold bag setting
-            // $this->assertTrue($order->isColdbagNeeded(), 'Cold bag needed should be true');
-
-            // // Verify description
-            // $this->assertEquals('Creating Order', $order->getDescription(), 'Description should match');
+            $orderArray['order_id'] = $this->orderId;
 
             // Verify recipient details using TestAddresses constants
             $orderRecipient = $order->getRecipient();
-            // $this->assertInstanceOf(Contact::class, $orderRecipient);
-
-            //TO DO: NOT SURE 
-            // $this->assertEquals($recipient->name, $orderRecipient->getName(), 'Recipient name should match');
-            // $this->assertEquals($recipient->phoneNumber, $orderRecipient->getPhoneNumber(), 'Recipient phone should match');
 
             // Verify recipient location
             $recipientLocation = $orderRecipient->getLocation();
-            // $this->assertInstanceOf(Location::class, $recipientLocation);
 
-            //TO DO: NOT SURE 
-            // $this->assertEquals($sender->address, $recipientLocation->getAddress(), 'Recipient address should match');
-
-            // try {
-            //     $retrievedOrder = $this->client->orders()->get($order->getOrderId());
-
-            //     // Verify retrieved order matches the created one
-            //     // $this->assertEquals($order->getOrderId(), $retrievedOrder->getOrderId(), 'Order IDs should match');
-            //     // $this->assertEquals($order->getClientOrderId(), $retrievedOrder->getClientOrderId(), 'Client Order IDs should match');
-
-            // } catch (RequestException $e) {
-            //     Log::info($e->getMessage());
-            // }
             return $orderArray;
 
         } catch (RequestException $e) {

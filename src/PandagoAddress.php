@@ -5,26 +5,13 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Nava\Pandago\Models\Contact;
 use Nava\Pandago\Models\Location;
-use Nava\Pandago\Models\Outlet\CreateOutletRequest;
+use Nava\Pandago\Models\Outlet\Outlet;
 
 class PandagoAddress
 {
 
-    // Garrett Popcorn Shops (Sender/Outlet)
-    const OUTLET_NAME         = 'Garrett Popcorn Shops';
-    const OUTLET_ADDRESS      = '391 Orchard Road, B2, Food Hall, B208, #8 Takashimaya Shopping Centre, Singapore 238872';
-    const OUTLET_LATITUDE     = 1.3117371353951626; //1.303768190090923;
-    const OUTLET_LONGITUDE    = 103.85512646847576;
-    const OUTLET_PHONE        = '+6567379388';
-    const OUTLET_CONTACT_NAME = 'Chalit';
-    const OUTLET_CITY         = 'Singapore';
-    const OUTLET_CURRENCY     = 'SGD';
-    const OUTLET_LOCALE       = 'en-SG';
-    const OUTLET_DESCRIPTION  = 'Garrett Popcorn Shops at Takashimaya Shopping Centre';
-
     public static function prepareData($data)
     {
-        // \Log::info('Data: '. print_r($data, true));
         $output = [];
         if ($data) {
             $unit = isset($data['deliveryaddress']['unit']) ? $data['deliveryaddress']['unit'] . " " : null;
@@ -168,21 +155,21 @@ class PandagoAddress
      * Create a standard outlet creation request.
      *
      * @param string|null $description Optional description
-     * @return CreateOutletRequest
+     * @return Outlet
      */
-    public static function createOutletRequest(?string $description = null): CreateOutletRequest
+    public static function createOutletRequest($store = null, ?string $description = null): Outlet
     {
-        return new CreateOutletRequest(
-            self::OUTLET_NAME,
-            self::OUTLET_ADDRESS,
-            self::OUTLET_LATITUDE,
-            self::OUTLET_LONGITUDE,
-            self::OUTLET_CITY,
-            self::OUTLET_PHONE,
-            self::OUTLET_CURRENCY,
-            self::OUTLET_LOCALE,
-            $description ?? self::OUTLET_DESCRIPTION
-        );
+        return new Outlet([
+            'name' => $store['title'] ?? '',
+            'address' => $store['address'] ?? '',
+            'latitude' => $store['lat'] ?? '',
+            'longitude' => $store['lng'] ?? '',
+            'city' => $store['city'] ?? '',
+            'phone_number' => $store['contact'] ?? '',
+            'currency' => 'SGD' ?? '',
+            'locale' => 'en-SG' ?? '',
+            'description' => 'Create outlet description',
+        ]);
     }
 
     /**
@@ -215,7 +202,7 @@ class PandagoAddress
      */
     public static function generateClientVendorId(string $prefix = 'outlet'): string
     {
-        return $prefix . '-test-' . uniqid();
+        return $prefix . '-' . uniqid();
     }
 
     /**

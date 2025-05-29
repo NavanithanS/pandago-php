@@ -86,18 +86,6 @@ class OrderFeeEstimation
 
         try{
             $result = $this->client->orders()->estimateFee($orderRequest);
-            
-            // $this->assertIsArray($result);
-            // $this->assertArrayHasKey('estimated_delivery_fee', $result);
-
-            // $this->assertIsNumeric($result['estimated_delivery_fee']);
-            // $this->assertGreaterThan(0, $result['estimated_delivery_fee']);
-            
-            // // Check if client order ID is included in response
-            // if (isset($result['client_order_id'])) {
-            //     // Verify it matches what we sent
-            //     $this->assertEquals($clientOrderId, $result['client_order_id']);
-            // }
 
             // Calculate distance between sender and recipient using TestAddresses
             // $distance = PandagoAddress::getApproximateDistance();
