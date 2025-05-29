@@ -43,7 +43,7 @@ return [
     | file_get_contents(storage_path('keys/pandago.pem'))
     |
     */
-    'private_key'   => file_get_contents(env('PANDAGO_PRIVATE_KEY')),
+    'private_key'   => file_get_contents(storage_path(env('PANDAGO_PRIVATE_KEY'))),
     /*
     |--------------------------------------------------------------------------
     | Pandago API Country
