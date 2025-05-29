@@ -66,9 +66,9 @@ class PandagoAddress
     public static function getOutletLocation($store = null): Location
     {
         return new Location(
-            self::OUTLET_ADDRESS,
-            self::OUTLET_LATITUDE,
-            self::OUTLET_LONGITUDE,
+            $store['address'],
+            $store['lat'],
+            $store['lng'],
             // $store->address,
             // $store->lat,
             // $store->lng,
@@ -86,9 +86,9 @@ class PandagoAddress
         return new Contact(
             // $store->title,
             // $store->contact,
-            self::OUTLET_CONTACT_NAME,
-            self::OUTLET_PHONE,
-            self::getOutletLocation(),
+            $store['title'],
+            $store['contact'],
+            self::getOutletLocation($store),
             $notes ?? 'Use the food hall entrance at B2'
         );
     }

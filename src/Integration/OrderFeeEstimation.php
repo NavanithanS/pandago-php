@@ -43,7 +43,7 @@ class OrderFeeEstimation
         $this->client = new PandagoClient($this->config);       
     }
 
-    public function getEstimateFee(Request $request)
+    public function getEstimateFee(Request $request, $store)
     {
 
         $data = PandagoAddress::prepareData($request->all());
@@ -62,7 +62,7 @@ class OrderFeeEstimation
         $orderRequest->setClientOrderId($clientOrderId);
 
         //set sender 
-        $sender = PandagoAddress::getOutletContact();
+        $sender = PandagoAddress::getOutletContact($store);
         $orderRequest->setSender($sender);
 
         //can print the payload 
