@@ -76,7 +76,7 @@ class OrderCancellation
             
             $cancelledOrder = $this->client->orders()->get($getOrder->getOrderId());
 
-            return $cancelledOrder;
+            return $result;
 
         } catch (RequestException $e) {
             // The order might be in a state that can't be cancelled
