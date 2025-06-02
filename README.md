@@ -23,28 +23,28 @@ A robust PHP client library for interacting with the Pandago API for on-demand c
 
 ## Features
 
--   🔒 **Secure Authentication**: JWT-based authentication with RSA key pairs
--   📦 **Complete Order Management**: Create, update, cancel, and track delivery orders
--   🏪 **Outlet Management**: Create and manage delivery pickup locations
--   🌍 **Multi-Country Support**: Works across 12+ countries and regions
--   ⚡ **Real-time Tracking**: Get live courier location and order status updates
--   💰 **Fee Estimation**: Calculate delivery costs before placing orders
--   📸 **Proof of Delivery**: Retrieve delivery confirmation photos
--   ✅ **Built-in Validation**: Comprehensive parameter validation with helpful error messages
--   🛠️ **Error Handling**: Context-aware error handling with actionable suggestions
--   🚀 **Laravel Integration**: First-class Laravel support with service provider and facade
--   🧪 **Testing Support**: Mock servers and comprehensive test utilities
--   📊 **Logging**: PSR-3 compatible logging for debugging and monitoring
+-   🔒 **Secure Authentication:** JWT-based authentication with RSA key pairs
+-   📦 **Complete Order Management:** Create, update, cancel, and track delivery orders
+-   🏪 **Outlet Management:** Create and manage delivery pickup locations
+-   🌍 **Multi-Country Support:** Works across 12+ countries and regions
+-   ⚡ **Real-time Tracking:** Get live courier location and order status updates
+-   💰 **Fee Estimation:** Calculate delivery costs before placing orders
+-   📸 **Proof of Delivery:** Retrieve delivery confirmation photos
+-   ✅ **Built-in Validation:** Comprehensive parameter validation with helpful error messages
+-   🛠️ **Error Handling:** Context-aware error handling with actionable suggestions
+-   🚀 **Laravel Integration:** First-class Laravel support with service provider and facade
+-   🧪 **Testing Support:** Mock servers and comprehensive test utilities
+-   📊 **Logging:** PSR-3 compatible logging for debugging and monitoring
 
 ## Requirements
 
--   **PHP**: 7.1 or later
--   **Extensions**: ext-json
--   **Dependencies**:
-    -   GuzzleHttp/Guzzle (^6.3|^7.0)
-    -   Firebase/php-jwt (^5.0|^6.0)
-    -   Ramsey/uuid (^3.8|^4.0)
-    -   Symfony/validator (^3.4|^4.0|^5.0|^6.0)
+-   **PHP:** 7.1 or later
+-   **Extensions:** `ext-json`
+-   **Dependencies:**
+    -   `GuzzleHttp/Guzzle` (^6.3|^7.0)
+    -   `Firebase/php-jwt` (^5.0|^6.0)
+    -   `Ramsey/uuid` (^3.8|^4.0)
+    -   `Symfony/validator` (^3.4|^4.0|^5.0|^6.0)
     -   PSR-3 compatible logger
 
 ## Installation
@@ -55,13 +55,11 @@ Install via Composer:
 composer require nava/pandago-php
 ```
 
-````
-
 ## Configuration & Authentication
 
 ### 1. Generate RSA Key Pair
 
-Generate your RSA key pair for secure API communication:
+First, generate your RSA key pair for secure API communication:
 
 ```bash
 # Generate private key
@@ -73,7 +71,7 @@ openssl rsa -in pandago-private.pem -pubout > pandago-public.pem
 
 Alternatively, use an online RSA generator:
 
--   Visit [CryptoTools RSA Generator](https://cryptotools.net/rsagenerator)
+-   Visit [CryptoTools RSA Generator](https://www.cryptotools.net/rsa)
 -   Select 2048-bit key length
 -   Click "Generate Key Pair"
 -   Save the private key as `pandago-private.pem`
@@ -83,8 +81,8 @@ Alternatively, use an online RSA generator:
 
 Contact your Pandago representative and provide:
 
--   **Public Key**: Contents of `pandago-public.pem`
--   **Brand/Branch Details**:
+-   **Public Key:** Contents of `pandago-public.pem`
+-   **Brand/Branch Details:**
     -   Name (e.g., "Store ABC")
     -   Address with coordinates
     -   Phone number
@@ -92,9 +90,9 @@ Contact your Pandago representative and provide:
 
 You'll receive:
 
--   **Client ID**: `pandago:my:00000000-0000-0000-0000-000000000000`
--   **Key ID**: `00000000-0000-0000-0000-000000000001`
--   **Scope**: `pandago.api.my.*`
+-   **Client ID:** `pandago:my:00000000-0000-0000-0000-000000000000`
+-   **Key ID:** `00000000-0000-0000-0000-000000000001`
+-   **Scope:** `pandago.api.my.*`
 
 ### 3. Basic Configuration
 
@@ -103,13 +101,13 @@ use Nava\Pandago\Client;
 
 $client = Client::make(
     'pandago:my:00000000-0000-0000-0000-000000000000', // Client ID
-    '00000000-0000-0000-0000-000000000001',            // Key ID
-    'pandago.api.my.*',                                // Scope
-    file_get_contents('/path/to/pandago-private.pem'), // Private Key
-    'my',                                              // Country
-    'sandbox',                                         // Environment
-    30,                                                // Timeout (seconds)
-    $logger                                            // PSR-3 Logger (optional)
+    '00000000-0000-0000-0000-000000000001',             // Key ID
+    'pandago.api.my.*',                                 // Scope
+    file_get_contents('/path/to/pandago-private.pem'),  // Private Key
+    'my',                                               // Country
+    'sandbox',                                          // Environment
+    30,                                                 // Timeout (seconds)
+    $logger                                             // PSR-3 Logger (optional)
 );
 ```
 
@@ -128,13 +126,14 @@ use Nava\Pandago\Models\Order\CreateOrderRequest;
 
 // Initialize client
 $client = Client::make(
-    'pandago:my:00000000-0000-0000-0000-000000000000', // ClientID
-    '00000000-0000-0000-0000-000000000001',             // KeyID
-    'pandago.api.my.*',                                 // Scope
-    file_get_contents('path/to/client.pem'),            // Private Key
-    'my',                                               // Country (default: my)
-    'sandbox'                                           // Environment (default: sandbox)
+    'pandago:my:00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000001',
+    'pandago.api.my.*',
+    file_get_contents('/path/to/pandago-private.pem'),
+    'my',
+    'sandbox'
 );
+
 // Create recipient
 $recipientLocation = new Location(
     '670, Era Jaya',    // Address
@@ -172,8 +171,6 @@ $sender = new Contact(
 );
 
 $orderRequest->setSender($sender);
-
-// Set additional options if needed
 $orderRequest->setPaymentMethod('PAID');
 $orderRequest->setColdbagNeeded(true);
 
@@ -196,17 +193,17 @@ try {
 
 ### Installation & Setup
 
-Publish Configuration:
+-   **Publish Configuration:**
 
 ```bash
 php artisan vendor:publish --provider="Nava\Pandago\Laravel\PandagoServiceProvider"
 ```
 
-Environment Configuration:
+-   **Environment Configuration:**
 
 Add to your `.env` file:
 
-```env
+```
 PANDAGO_CLIENT_ID=pandago:my:00000000-0000-0000-0000-000000000000
 PANDAGO_KEY_ID=00000000-0000-0000-0000-000000000001
 PANDAGO_SCOPE=pandago.api.my.*
@@ -216,7 +213,7 @@ PANDAGO_ENVIRONMENT=sandbox
 PANDAGO_TIMEOUT=30
 ```
 
-Alternative Key Configuration:
+-   **Alternative Key Configuration:**
 
 You can also store the private key inline or reference it in `config/pandago.php`:
 
@@ -542,11 +539,11 @@ $outlet = new Outlet([
 ]);
 
 // Set additional outlet details (all optional)
-$request->setStreet('Jalan Laguna 1');
-$request->setStreetNumber('1');
-$request->setPostalCode('13700');
-$request->setRiderInstructions('Masuk melalui pintu belakang, parkir di lot A');
-$request->setHalal(true);
+$outlet->setStreet('Jalan Laguna 1');
+$outlet->setStreetNumber('1');
+$outlet->setPostalCode('13700');
+$outlet->setRiderInstructions('Masuk melalui pintu belakang, parkir di lot A');
+$outlet->setHalal(true);
 
 // User management
 $outlet->addUsers(['manager@restaurant.com', 'staff@restaurant.com']);
@@ -680,7 +677,7 @@ The library supports delivery services in the following countries:
 | no           | Norway       | pandago-api-apse.deliveryhero.io |
 | se           | Sweden       | pandago-api-apse.deliveryhero.io |
 
-**Sandbox Environment**: All countries use `pandago-api-sandbox.deliveryhero.io`
+**Sandbox Environment:** All countries use `pandago-api-sandbox.deliveryhero.io`
 
 ## Testing
 
@@ -951,27 +948,27 @@ We welcome contributions! Please follow these guidelines:
 
 ### Development Setup
 
-Fork and clone the repository:
+-   Fork and clone the repository:
 
 ```bash
 git clone https://github.com/NavanithanS/pandago-php.git
 cd pandago-php
 ```
 
-Install dependencies:
+-   Install dependencies:
 
 ```bash
 composer install
 ```
 
-Set up testing environment:
+-   Set up testing environment:
 
 ```bash
 cp tests/config.example.php tests/config.php
 # Edit tests/config.php with your test credentials
 ```
 
-Run tests:
+-   Run tests:
 
 ```bash
 composer test
@@ -981,13 +978,16 @@ composer cs
 
 ### Contribution Process
 
-Create a feature branch:
+-   Create a feature branch:
 
 ```bash
 git checkout -b feature/awesome-feature
 ```
 
-Make your changes following PSR-12 coding standards, add tests for new functionality, update documentation if needed, and run quality checks:
+-   Make your changes following PSR-12 coding standards
+-   Add tests for new functionality
+-   Update documentation if needed
+-   Run quality checks:
 
 ```bash
 composer test
@@ -995,13 +995,13 @@ composer analyse
 composer cs-fix
 ```
 
-Commit your changes:
+-   Commit your changes:
 
 ```bash
 git commit -m 'Add awesome feature'
 ```
 
-Push and create a Pull Request:
+-   Push and create a Pull Request:
 
 ```bash
 git push origin feature/awesome-feature
@@ -1018,35 +1018,38 @@ git push origin feature/awesome-feature
 
 ## License
 
-This library is licensed under the MIT License. See the [LICENSE](#license) file for details.
+This library is licensed under the MIT License. See the [LICENSE](#license) section for details.
 
 ### MIT License
 
+```
 Copyright (c) 2025 Nava
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+```
 
 ## Support
 
 ### Getting Help
 
--   📧 **Email**: gua@navins.biz
--   🐛 **Issues**: [GitHub Issues](https://github.com/NavanithanS/pandago-php/issues)
--   📖 **Documentation**: [API Documentation](https://github.com/NavanithanS/pandago-php)
+-   📧 **Email:** gua@navins.biz
+-   🐛 **Issues:** [GitHub Issues](https://github.com/NavanithanS/pandago-php/issues)
+-   📖 **Documentation:** [API Documentation](#api-reference)
 
 ### Security Issues
 
-If you discover any security vulnerabilities, please email gua@navins.biz instead of using the issue tracker.
-
----
+If you discover any security vulnerabilities, please email `gua@navins.biz` instead of using the issue tracker.
 
 This library is not officially affiliated with Delivery Hero or Pandago. It's an independent client library created to facilitate integration with the Pandago API.
-
-```
-
-```
-````
