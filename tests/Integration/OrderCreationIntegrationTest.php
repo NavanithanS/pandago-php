@@ -553,6 +553,26 @@ class OrderCreationIntegrationTest extends TestCase
     }
 
     /**
+     * Test Case 5.2.3: Create order with invalid scheduled time (Unhappy Path)
+     */
+    public function testCreateOrderWithInvalidScheduledTime()
+    {
+        // TODO: Test scheduling too far in the future (>2 days)
+        // TODO: Test scheduling too soon (<55 minutes)
+        // TODO: Test scheduling in the past
+    }
+
+    /**
+     * Test Case 5.2.4: Invalid cash collection amount (Unhappy Path)
+     */
+    public function testCreateOrderWithInvalidCashCollection()
+    {
+        // TODO: Test collect_from_customer > amount (should fail)
+        // TODO: Test collect_from_customer < amount (should fail)
+        // TODO: Test collect_from_customer with PAID payment method (should fail)
+    }
+
+    /**
      * Test Case 5.1.4: Submit order with amount attribute as string instead of float (Unhappy Path)
      *
      * The amount attribute is a float data type. Sending wrong data type will result in an error.
@@ -920,6 +940,93 @@ class OrderCreationIntegrationTest extends TestCase
                 throw $e;
             }
         }
+    }
+
+    /**
+     * Test Case 5.1.7: Create order with scheduled delivery (Happy Path)
+     *
+     * Test the preordered_for functionality that allows scheduling deliveries
+     * from 55 minutes to 2 days in the future.
+     */
+    public function testCreateOrderWithScheduledDelivery()
+    {
+        echo "\n\n✅ TEST CASE 5.1.7: Create order with scheduled delivery\n";
+
+        $recipient     = TestAddresses::getCustomerContact();
+        $clientOrderId = TestAddresses::generateClientOrderId('scheduled');
+
+        $request = new CreateOrderRequest(
+            $recipient,
+            25.00,
+            'Scheduled delivery test'
+        );
+        $request->setClientOrderId($clientOrderId);
+        $request->setSender(TestAddresses::getOutletContact());
+
+        // Schedule for 2 hours from now
+        $scheduledTime = strtotime('+2 hours');
+        $request->setPreorderedFor($scheduledTime);
+
+        $order = $this->client->orders()->create($request);
+
+        $this->assertNotEmpty($order->getOrderId());
+        $this->assertEquals($scheduledTime, $order->getPreorderedFor());
+        echo "✓ Order scheduled for: " . date('Y-m-d H:i:s', $scheduledTime) . "\n";
+    }
+
+    /**
+     * Test Case 5.1.8: Create order with cash collection (Happy Path)
+     *
+     * Test collect_from_customer feature available in Jordan
+     */
+    public function testCreateOrderWithCashCollection()
+    {
+        echo "\n\n✅ TEST CASE 5.1.8: Create order with cash collection\n";
+
+        $recipient = TestAddresses::getCustomerContact();
+        $request   = new CreateOrderRequest($recipient, 20.00, 'Cash collection test');
+        $request->setPaymentMethod('CASH_ON_DELIVERY');
+        $request->setCollectFromCustomer(25.00); // Collect more than order amount
+        $request->setSender(TestAddresses::getOutletContact());
+
+        $order = $this->client->orders()->create($request);
+
+        $this->assertEquals(25.00, $order->getCollectFromCustomer());
+        echo "✓ Cash collection amount: " . $order->getCollectFromCustomer() . "\n";
+    }
+
+    /**
+     * Test Case 5.1.11: Create order with dynamic pickup
+     */
+    public function testCreateOrderWithDynamicPickup()
+    {
+        $request = new CreateOrderRequest($recipient, 25.00, 'Dynamic pickup test');
+        $request->setIsDynamicPickup(true);
+
+        // Test that system can handle pickup from any registered outlet
+    }
+
+    /**
+     * Test Case 5.1.9: Create order with age validation (Happy Path)
+     *
+     * Test age_validation_required for Sweden
+     */
+    public function testCreateOrderWithAgeValidation()
+    {
+        echo "\n\n✅ TEST CASE 5.1.9: Create order with age validation\n";
+
+        $recipient = TestAddresses::getCustomerContact();
+        $request   = new CreateOrderRequest($recipient, 30.00, 'Age restricted item');
+        $request->setSender(TestAddresses::getOutletContact());
+        $request->setDeliveryTasks([
+            'age_validation_required' => true,
+        ]);
+
+        $order = $this->client->orders()->create($request);
+
+        $deliveryTasks = $order->getDeliveryTasks();
+        $this->assertTrue($deliveryTasks['age_validation_required']);
+        echo "✓ Age validation enabled\n";
     }
 
     /**

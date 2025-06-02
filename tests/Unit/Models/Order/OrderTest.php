@@ -81,8 +81,8 @@ class OrderTest extends TestCase
         // Check sender details
         $sender = $order->getSender();
         $this->assertInstanceOf(Contact::class, $sender);
-        $this->assertEquals('Garrett Popcorn Shops', $sender->getName());
-        $this->assertEquals('+6518006992824', $sender->getPhoneNumber());
+        $this->assertEquals(TestAddresses::OUTLET_CONTACT_NAME, $sender->getName());
+        $this->assertEquals(TestAddresses::OUTLET_PHONE, $sender->getPhoneNumber());
         $this->assertEquals('use the left side door', $sender->getNotes());
 
         // Check sender location

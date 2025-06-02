@@ -637,4 +637,35 @@ class OutletIntegrationTest extends TestCase
         echo "• API correctly rejected request with both add_user and delete_user (400 Bad Request)\n";
         echo "• Error message properly indicated that users cannot be added and deleted in the same request\n";
     }
+
+    /**
+     * Test Case 9.1.6: Add users to outlet (Happy Path)
+     */
+    public function testAddUsersToOutlet()
+    {
+        $request = TestAddresses::createOutletRequest();
+        $request->setAddUsers(['user1@example.com', 'user2@example.com']);
+
+        $outlet = $this->client->outlets()->createOrUpdate($clientVendorId, $request);
+
+        $users = $outlet->getUsers();
+        $this->assertContains('user1@example.com', $users);
+        $this->assertContains('user2@example.com', $users);
+    }
+
+/**
+ * Test Case 9.1.7: Remove users from outlet (Happy Path)
+ */
+    public function testRemoveUsersFromOutlet()
+    {
+        // TODO:First add users, then remove them
+    }
+
+/**
+ * Test Case 9.2.4: Add and remove users in same request (Unhappy Path)
+ */
+    public function testAddAndRemoveUsersSimultaneously()
+    {
+        // TODO:This should fail with 400 error
+    }
 }

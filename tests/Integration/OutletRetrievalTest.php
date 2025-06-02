@@ -292,6 +292,33 @@ class OutletRetrievalTest extends TestCase
     }
 
     /**
+     * Test Case 10.1.3: Get all outlets (Happy Path)
+     */
+    public function testGetAllOutlets()
+    {
+        echo "\n\n✅ TEST CASE 10.1.3: Get all outlets\n";
+
+        $outlets = $this->client->outlets()->getAll();
+
+        $this->assertIsArray($outlets);
+        echo "✓ Retrieved " . count($outlets) . " outlets\n";
+
+        foreach ($outlets as $outlet) {
+            $this->assertNotEmpty($outlet->getClientVendorId());
+            $this->assertNotEmpty($outlet->getName());
+            echo "• " . $outlet->getName() . " (" . $outlet->getClientVendorId() . ")\n";
+        }
+    }
+
+/**
+ * Test Case 10.2.3: Get all outlets as non-parent vendor (Unhappy Path)
+ */
+    public function testGetAllOutletsAsNonParent()
+    {
+        // TODO:Should return 401 with "This vendor is not a parent" message
+    }
+
+    /**
      * Test retrieving an existing outlet by ID (using a known ID).
      *
      * This test is for cases where you have a known outlet ID and want to verify

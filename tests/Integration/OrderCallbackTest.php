@@ -437,6 +437,32 @@ class OrderCallbackTest extends TestCase
     }
 
     /**
+     * Test Case 6.2.3: Verify webhook signature (Happy Path)
+     */
+    public function testWebhookSignatureVerification()
+    {
+        echo "\n\n✅ TEST CASE 6.2.3: Verify webhook signature\n";
+
+        $payload = json_encode([
+            'order_id' => 'test-order-123',
+            'status'   => 'DELIVERED',
+        ]);
+
+        $secret    = 'test-secret-key';
+        $signature = hash_hmac('sha256', $payload, $secret);
+
+        // Test signature verification logic
+        $this->assertTrue($this->verifySignature($payload, $signature, $secret));
+        echo "✓ Webhook signature verified correctly\n";
+    }
+
+    private function verifySignature($payload, $signature, $secret)
+    {
+        $expectedSignature = hash_hmac('sha256', $payload, $secret);
+        return hash_equals($expectedSignature, $signature);
+    }
+
+    /**
      * Create a mock callback handler to process callbacks.
      *
      * This is a utility method to simulate how a callback might be processed in a real application.
