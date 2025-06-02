@@ -1,5 +1,4 @@
 <?php
-
 namespace Nava\Pandago\Auth;
 
 use Firebase\JWT\JWT;
@@ -80,7 +79,7 @@ class TokenManager
     protected function requestToken(): Token
     {
         $assertion = $this->generateAssertion();
-        $response = $this->httpClient->request('POST', $this->config->getAuthUrl(), [
+        $response  = $this->httpClient->request('POST', $this->config->getAuthUrl(), [
             'headers'     => [
                 'Content-Type' => 'application/x-www-form-urlencoded',
             ],
@@ -134,11 +133,14 @@ class TokenManager
 
         // Handle file paths
         if (file_exists($privateKey)) {
-            try {
-                $privateKey = file_get_contents($privateKey);
-            } catch (\Exception $e) {
-                throw new AuthenticationException('Failed to read private key file: ' . $e->getMessage());
+            if (! is_readable($privateKey)) {
+                throw new AuthenticationException('Private key file is not readable: ' . $privateKey);
             }
+            $content = file_get_contents($privateKey);
+            if (false === $content) {
+                throw new AuthenticationException('Failed to read private key file: ' . $privateKey);
+            }
+            $privateKey = $content;
         }
 
         // Ensure the key has the correct format
@@ -170,5 +172,26 @@ class TokenManager
         //     : 'https://sts.deliveryhero.io';
 
         return 'https://sts.deliveryhero.io';
+    }
+
+    private function validatePrivateKey(string $privateKey): string
+    {
+        // Ensure the key has the correct format without logging content
+        if (strpos($privateKey, '-----BEGIN') === false) {
+            throw new AuthenticationException('Invalid private key format: Missing header');
+        }
+
+        // Validate key can be loaded without exposing content
+        try {
+            $resource = openssl_pkey_get_private($privateKey);
+            if (! $resource) {
+                throw new AuthenticationException('Invalid private key format');
+            }
+            openssl_pkey_free($resource);
+        } catch (\Exception $e) {
+            throw new AuthenticationException('Invalid private key: Unable to parse');
+        }
+
+        return $privateKey;
     }
 }

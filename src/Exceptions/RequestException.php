@@ -25,6 +25,8 @@ class RequestException extends PandagoException
      */
     protected $requestOptions;
 
+    protected $rawMessage;
+
     /**
      * RequestException constructor.
      *
@@ -45,6 +47,8 @@ class RequestException extends PandagoException
         string $endpoint = null,
         array $requestOptions = []
     ) {
+        $this->rawMessage = $message;
+
         // Enhance the error message with more context if method and endpoint are provided
         if ($method && $endpoint) {
             $message = sprintf(
@@ -61,6 +65,16 @@ class RequestException extends PandagoException
         $this->method         = $method;
         $this->endpoint       = $endpoint;
         $this->requestOptions = $requestOptions;
+    }
+
+    /**
+     * Get the raw error message without formatting
+     *
+     * @return string
+     */
+    public function getRawMessage(): string
+    {
+        return $this->rawMessage;
     }
 
     /**

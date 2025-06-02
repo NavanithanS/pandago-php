@@ -84,18 +84,16 @@ class ErrorHandler
      * @param RequestException $exception
      * @return string
      */
-    public static function getDetailedErrorMessage(RequestException $exception): string
+    public function getDetailedErrorMessage(RequestException $exception): string
     {
         $statusCode = $exception->getCode();
-        $message    = $exception->getMessage();
+        $rawMessage = $exception->getRawMessage();
         $data       = $exception->getData();
 
         $errorDetails = [];
 
-        // Add basic error information - exactly match the expected format for tests
-        // Remove the method and endpoint from the message if they're included
-        $cleanMessage   = preg_replace('/\[.*?\]\s*/', '', $message);
-        $errorDetails[] = sprintf("Error %d: %s", $statusCode, $cleanMessage);
+        // Use raw message for clean error reporting
+        $errorDetails[] = sprintf("Error %d: %s", $statusCode, $rawMessage);
 
         // Add request context if available
         if ($exception->getMethod() && $exception->getEndpoint()) {
@@ -108,31 +106,36 @@ class ErrorHandler
             $errorDetails[] = sprintf("Suggestion: %s %s", $errorInfo['message'], $errorInfo['action']);
         }
 
-        // Add pattern-specific suggestions
+        // Add pattern-specific suggestions using raw message
         foreach (self::ERROR_PATTERN_MAP as $pattern => $suggestion) {
-            if (stripos($message, $pattern) !== false) {
+            if (stripos($rawMessage, $pattern) !== false) {
                 $errorDetails[] = sprintf("Tip: %s", $suggestion);
-                break; // Only add the first matching suggestion
+                break;
             }
         }
 
         // Add API error details if available
         if (! empty($data) && is_array($data)) {
-            if (isset($data['errors']) && is_array($data['errors'])) {
-                $errorDetails[] = "API reported errors:";
-                foreach ($data['errors'] as $error) {
-                    if (is_string($error)) {
-                        $errorDetails[] = "- $error";
-                    } elseif (is_array($error) && isset($error['message'])) {
-                        $errorDetails[] = "- {$error['message']}";
-                    }
-                }
-            } elseif (isset($data['error_description'])) {
-                $errorDetails[] = "API message: {$data['error_description']}";
-            }
+            $this->addApiErrorDetails($errorDetails, $data);
         }
 
         return implode("\n", $errorDetails);
+    }
+
+    private function addApiErrorDetails(array &$errorDetails, array $data): void
+    {
+        if (isset($data['errors']) && is_array($data['errors'])) {
+            $errorDetails[] = "API reported errors:";
+            foreach ($data['errors'] as $error) {
+                if (is_string($error)) {
+                    $errorDetails[] = "- $error";
+                } elseif (is_array($error) && isset($error['message'])) {
+                    $errorDetails[] = "- {$error['message']}";
+                }
+            }
+        } elseif (isset($data['error_description'])) {
+            $errorDetails[] = "API message: {$data['error_description']}";
+        }
     }
 
     /**

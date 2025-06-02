@@ -77,7 +77,7 @@ trait ValidatesParameters
                 }
                 break;
 
-            case 'enum':
+            case 'in':
                 $allowedValues = explode(',', $ruleValue);
                 if (null !== $value && ! in_array($value, $allowedValues)) {
                     throw new ValidationException("{$key} must be one of: " . implode(', ', $allowedValues));

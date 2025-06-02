@@ -39,6 +39,9 @@ class Contact
      */
     public function __construct(string $name, string $phoneNumber, Location $location, ?string $notes = null)
     {
+        $name        = trim($name);
+        $phoneNumber = preg_replace('/[^\+\d]/', '', $phoneNumber); // Keep only + and digits
+
         $this->validate([
             'name'        => $name,
             'phoneNumber' => $phoneNumber,
