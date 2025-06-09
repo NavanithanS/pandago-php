@@ -52,7 +52,8 @@ class Config
             'auth' => 'https://sts-st.deliveryhero.io',
         ],
         'production' => [
-            'api'  => 'https://pandago-api.deliveryhero.io',
+            //'api'  => 'https://pandago-api.deliveryhero.io',
+            'api'  => 'https://pandago-api-apse.deliveryhero.io',
             'auth' => 'https://sts.deliveryhero.io',
         ],
     ];
