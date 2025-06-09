@@ -20,7 +20,7 @@ class PandagoAddress
             $output['address']  = $unit . "" . $address . "" . $address2;
             $output['postcode'] = isset($data['deliveryaddress']['postcode']) ? $data['deliveryaddress']['postcode'] : null;
             $output['name']     = isset($data['deliveryaddress']['name']) ? $data['deliveryaddress']['name'] : null;
-            $output['phone']    = isset($data['deliveryaddress']['phone']) ? formatPhoneNumber($data['deliveryaddress']['phone']) : null;
+            $output['phone']    = isset($data['deliveryaddress']['phone']) ? self::formatPhoneNumber($data['deliveryaddress']['phone']) : null;
             $output['store_id'] = isset($data['deliveryaddress']['_id']) ? $data['deliveryaddress']['_id'] : null;
             $output['lat']      = isset($data['deliveryaddress']['lat']) ? (string) $data['deliveryaddress']['lat'] : null;
             $output['lng']      = isset($data['deliveryaddress']['lng']) ? (string) $data['deliveryaddress']['lng'] : null;
@@ -45,7 +45,7 @@ class PandagoAddress
             $output['address']  = $unit . "" . $address . "" . $address2;
             $output['postcode'] = isset($data['content']['address']['postcode']) ? $data['content']['address']['postcode'] : null;
             $output['name']     = isset($data['content']['address']['name']) ? $data['content']['address']['name'] : null;
-            $output['phone']    = isset($data['content']['address']['phone']) ? formatPhoneNumber($data['content']['address']['phone']) : null;
+            $output['phone']    = isset($data['content']['address']['phone']) ? self::formatPhoneNumber($data['content']['address']['phone']) : null;
             $output['store_id'] = isset($data['content']['shipping_store']) ? $data['content']['shipping_store'] : null;
             $output['lat']      = isset($data['content']['address']['lat']) ? $data['content']['address']['lat'] : null;
             $output['lng']      = isset($data['content']['address']['lng']) ? $data['content']['address']['lng'] : null;
@@ -57,7 +57,7 @@ class PandagoAddress
         return $output;
     }
 
-    function formatPhoneNumber($phone) {
+    private static function formatPhoneNumber($phone) {
         if (empty($phone)) {
             return null;
         }
