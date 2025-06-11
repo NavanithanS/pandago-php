@@ -90,10 +90,22 @@ class OrderFeeEstimation
             // Calculate distance between sender and recipient using TestAddresses
             // $distance = PandagoAddress::getApproximateDistance();
 
-            return $result;
+             return response()->json([
+                'success' => true,
+                'result' => $result,
+            ]);
             
         }catch (RequestException $e){
             Log::info('Fee estimation failed: ' . $e->getMessage());
+
+            $errorMessage = $e->getMessage();
+            $lines = explode("\n", $errorMessage);
+            $message = trim(end($lines));
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Fee estimation failed: '. $message,
+            ], 500); 
         }
     }
     
