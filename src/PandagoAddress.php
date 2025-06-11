@@ -64,6 +64,11 @@ class PandagoAddress
         
         $phone = ltrim($phone, '+');
 
+        // Add '6' at the beginning if the phone doesn't start with '6'
+        if ($phone[0] !== '6') {
+            $phone = '6' . $phone;
+        }
+
         return '+' . $phone;
     }
 
