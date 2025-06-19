@@ -463,6 +463,13 @@ if ($success) {
 }
 ```
 
+#### Scheduled Deliveries
+
+```php
+// Schedule delivery for 2 hours from now
+$orderRequest->setPreorderedFor(strtotime('+2 hours'));
+```
+
 #### Track Courier Location
 
 ```php
